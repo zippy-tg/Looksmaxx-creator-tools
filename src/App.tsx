@@ -28,6 +28,7 @@ interface ScorecardState {
   avatarBorderStart: string;
   avatarBorderEnd: string;
   meshColor: string;
+  meshOpacity: number;
 }
 
 interface DetailedBreakdownState {
@@ -84,6 +85,7 @@ const INITIAL_CARD: ScorecardState = {
   avatarBorderStart: '#4a6cff',
   avatarBorderEnd: '#7da2ff',
   meshColor: '#ffffff',
+  meshOpacity: 0.42,
 };
 
 const TIER_OPTIONS = ['SUB 5', 'LTN', 'MTN', 'HTN', 'CHAD LITE', 'CHAD', 'ADAM'] as const;
@@ -600,6 +602,7 @@ function MinimalEditorScreen({
       meshPoints,
       meshDrawProgress,
       meshColor: card.meshColor,
+      meshOpacity: card.meshOpacity,
     });
 
     drawFaceMesh({
@@ -609,8 +612,9 @@ function MinimalEditorScreen({
       meshPoints,
       meshDrawProgress,
       meshColor: card.meshColor,
+      meshOpacity: card.meshOpacity,
     });
-  }, [avatarRenderTick, card.meshColor, effectiveFaceStatus, meshDrawProgress, meshPoints]);
+  }, [avatarRenderTick, card.meshColor, card.meshOpacity, effectiveFaceStatus, meshDrawProgress, meshPoints]);
 
   const handleExportVideo = async () => {
     if (!previewCardRef.current || isExporting) {
@@ -971,6 +975,21 @@ function MinimalEditorScreen({
                 label="Mesh Color"
                 value={card.meshColor}
                 onChange={(value) => onChange('meshColor', value)}
+              />
+            </div>
+          </div>
+
+          <div className="editor-section">
+            <h2>Mesh</h2>
+
+            <div className="compact-grid compact-grid--double">
+              <TuneInput
+                label="Mesh Opacity"
+                value={card.meshOpacity}
+                min={0.1}
+                max={1}
+                step={0.01}
+                onChange={(value) => onChange('meshOpacity', value)}
               />
             </div>
           </div>

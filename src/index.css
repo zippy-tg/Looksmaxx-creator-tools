@@ -1308,6 +1308,7 @@ button {
   position: relative;
   width: 100%;
   height: 100%;
+  padding: 0;
   border: none;
   border-radius: 50%;
   background: radial-gradient(circle at center, var(--avatar-glow-start), rgba(12, 17, 34, 0.92) 72%);
@@ -1320,6 +1321,8 @@ button {
   color: #6b8cff;
   cursor: pointer;
   overflow: visible;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .preview-avatar span {
@@ -1335,6 +1338,7 @@ button {
   display: block;
   flex: none;
   object-fit: cover;
+  border-radius: 999px;
 }
 
 .preview-avatar__mesh {
