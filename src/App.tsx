@@ -47,6 +47,8 @@ interface DetailedBreakdownState {
   landmarkOpacity: number;
   landmarkDotSize: number;
   landmarkLineThickness: number;
+  badgeBorderStart: string;
+  badgeBorderEnd: string;
 }
 
 interface AscendState {
@@ -103,6 +105,8 @@ const INITIAL_DETAILED_CARD: DetailedBreakdownState = {
   landmarkOpacity: 0.88,
   landmarkDotSize: 3.2,
   landmarkLineThickness: 1.6,
+  badgeBorderStart: '#9cb5ff',
+  badgeBorderEnd: '#496ef9',
 };
 
 const INITIAL_ASCEND_CARD: AscendState = {
@@ -1574,6 +1578,16 @@ function DetailedBreakdownEditorScreen({
                 value={card.landmarkColor}
                 onChange={(value) => onChange('landmarkColor', value)}
               />
+              <ColorField
+                label="Badge Border Start"
+                value={card.badgeBorderStart}
+                onChange={(value) => onChange('badgeBorderStart', value)}
+              />
+              <ColorField
+                label="Badge Border End"
+                value={card.badgeBorderEnd}
+                onChange={(value) => onChange('badgeBorderEnd', value)}
+              />
             </div>
           </div>
 
@@ -1733,6 +1747,8 @@ function DetailedPreviewCard({
         ['--detail-accent-start' as string]: card.accentStart,
         ['--detail-accent-end' as string]: card.accentEnd,
         ['--detail-score-color' as string]: card.scoreColor,
+        ['--detail-badge-border-start' as string]: card.badgeBorderStart,
+        ['--detail-badge-border-end' as string]: card.badgeBorderEnd,
       }}
     >
       <div className="portrait-header">
@@ -1786,6 +1802,13 @@ function DetailedPreviewCard({
                 <span>Front</span>
               </>
             )}
+            <div className="portrait-shot__badge" aria-hidden="true">
+              <img
+                src="/omnimaxx-app-icon.png"
+                alt=""
+                className="portrait-shot__badge-image"
+              />
+            </div>
           </button>
 
           <div className="portrait-analysis-copy">
@@ -1830,6 +1853,13 @@ function DetailedPreviewCard({
                 <span>Avatar</span>
               </>
             )}
+            <div className="portrait-results-avatar__badge" aria-hidden="true">
+              <img
+                src="/omnimaxx-app-icon.png"
+                alt=""
+                className="portrait-results-avatar__badge-image"
+              />
+            </div>
           </div>
 
           <div className="portrait-score-head">
@@ -2562,6 +2592,13 @@ function AscendPreviewCard({
               <span>Projection Image</span>
             </>
           )}
+          <div className="ascend-hero__badge" aria-hidden="true">
+            <img
+              src="/omnimaxx-app-icon.png"
+              alt=""
+              className="ascend-hero__badge-image"
+            />
+          </div>
         </button>
       </div>
 
@@ -2577,7 +2614,7 @@ function AscendPreviewCard({
 
           <div className="ascend-score-card__main">
             <span className="ascend-score-card__value">{displayedPslScore.toFixed(1)}</span>
-            <span className="ascend-score-card__unit">/10</span>
+            <span className="ascend-score-card__unit">/8</span>
           </div>
 
           <div className="ascend-score-card__track">
@@ -2710,6 +2747,8 @@ function PreviewCard({
             boxShadow: `0 0 34px ${card.avatarBorderStart}33, 0 0 52px ${card.avatarBorderEnd}1f`,
             ['--avatar-glow-start' as string]: `${card.avatarBorderStart}55`,
             ['--avatar-glow-end' as string]: `${card.avatarBorderEnd}10`,
+            ['--badge-border-start' as string]: card.avatarBorderStart,
+            ['--badge-border-end' as string]: card.avatarBorderEnd,
             ...(exportFrameProgress === null ? {} : getRevealStyle(avatarReveal, 10, 0.92)),
           }}
         >
@@ -2737,6 +2776,13 @@ function PreviewCard({
                 <span>Insert Image</span>
               </>
             )}
+            <div className="preview-avatar__badge" aria-hidden="true">
+              <img
+                src="/omnimaxx-app-icon.png"
+                alt=""
+                className="preview-avatar__badge-image"
+              />
+            </div>
           </button>
         </div>
       </div>
