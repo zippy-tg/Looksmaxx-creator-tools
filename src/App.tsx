@@ -1936,7 +1936,8 @@ function AscendEditorScreen({
   const displayedPslScore = card.pslScore * pslScoreProgress;
   const displayedPotentialScore = card.potentialScore * potentialScoreProgress;
   const displayedFeaturesScore = card.improvementScore * featuresScoreProgress;
-  const pslBarProgress = card.pslScore * 10 * easedProgress(windowedProgress(effectiveAnimationProgress, 0.4, 0.82));
+  const pslBarProgress =
+    (card.pslScore / 8) * 100 * easedProgress(windowedProgress(effectiveAnimationProgress, 0.4, 0.82));
   const potentialBarProgress =
     card.potentialScore * 10 * easedProgress(windowedProgress(effectiveAnimationProgress, 0.54, 0.9));
   const featuresBarProgress =
@@ -2324,6 +2325,7 @@ function AscendEditorScreen({
               <FeatureInput
                 label="PSL Score"
                 value={card.pslScore}
+                max={8}
                 onChange={(value) => onChange('pslScore', value)}
               />
               <FeatureInput
@@ -2874,10 +2876,12 @@ function ColorField({
 function FeatureInput({
   label,
   value,
+  max = 10,
   onChange,
 }: {
   label: string;
   value: number;
+  max?: number;
   onChange: (value: number) => void;
 }) {
   return (
@@ -2890,7 +2894,7 @@ function FeatureInput({
         className="feature-input__slider"
         type="range"
         min={0}
-        max={10}
+        max={max}
         step={0.1}
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
