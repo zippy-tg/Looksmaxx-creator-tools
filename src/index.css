@@ -1242,7 +1242,8 @@ button {
 }
 
 .preview-card--capture .preview-avatar {
-  box-shadow: 0 0 22px var(--avatar-glow-end) !important;
+  background: rgba(12, 17, 34, 0.96) !important;
+  box-shadow: none !important;
 }
 
 .preview-card--capture .score-box,
@@ -1250,6 +1251,35 @@ button {
 .ascend-card--capture .ascend-score-card {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+.preview-card--capture .preview-brand__logo,
+.portrait-card--capture .portrait-appbar__logo {
+  box-shadow: none !important;
+}
+
+.preview-card--capture .preview-brand__name,
+.portrait-card--capture .portrait-appbar__name,
+.ascend-card--capture .ascend-score-card__label,
+.ascend-card--capture .ascend-score-card__tier,
+.ascend-card--capture .ascend-score-card__value,
+.portrait-card--capture .portrait-score-head__value strong,
+.portrait-card--capture .detail-feature-cell strong {
+  text-shadow: none !important;
+}
+
+.preview-card--capture .score-box::before,
+.ascend-card--capture .ascend-score-card::before {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 26%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 52%) !important;
+}
+
+.preview-card--capture .preview-avatar__badge,
+.portrait-card--capture .portrait-shot__badge,
+.portrait-card--capture .portrait-results-avatar__badge,
+.ascend-card--capture .ascend-hero__badge {
+  box-shadow: none !important;
 }
 
 .preview-card--capture .score-box {
