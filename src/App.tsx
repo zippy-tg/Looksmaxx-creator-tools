@@ -646,15 +646,17 @@ function MinimalEditorScreen({
       ffmpeg.on('progress', progressListener);
       setExportProgress(12);
 
-      setAnimationNonce((current) => current + 1);
-      await wait(80);
-      setExportFrameProgress(0);
-      await waitForAnimationFrame();
-
       const sourceNode = exportPreviewCardRef.current;
       if (!sourceNode) {
         throw new Error('Could not prepare the export preview.');
       }
+
+      await waitForExportNodeReady(sourceNode);
+      setAnimationNonce((current) => current + 1);
+      await wait(80);
+      setExportFrameProgress(0);
+      await waitForAnimationFrame();
+      await waitForAnimationFrame();
       const width = EXPORT_LAYOUT_SIZE;
       const height = EXPORT_LAYOUT_SIZE;
       const outputSize = EXPORT_VIDEO_SIZE;
@@ -1311,15 +1313,17 @@ function DetailedBreakdownEditorScreen({
       ffmpeg.on('progress', progressListener);
       setExportProgress(12);
 
-      setAnimationNonce((current) => current + 1);
-      await wait(80);
-      setExportFrameProgress(0);
-      await waitForAnimationFrame();
-
       const sourceNode = exportPreviewCardRef.current;
       if (!sourceNode) {
         throw new Error('Could not prepare the export preview.');
       }
+
+      await waitForExportNodeReady(sourceNode);
+      setAnimationNonce((current) => current + 1);
+      await wait(80);
+      setExportFrameProgress(0);
+      await waitForAnimationFrame();
+      await waitForAnimationFrame();
 
       const width = EXPORT_PORTRAIT_LAYOUT_WIDTH;
       const height = EXPORT_PORTRAIT_LAYOUT_HEIGHT;
@@ -1454,6 +1458,32 @@ function DetailedBreakdownEditorScreen({
 
       const outputName = `omnimaxx-detailed-breakdown-${Date.now()}.png`;
       await waitForExportNodeReady(sourceNode);
+      const overlayStyle: DetailOverlayStyle = {
+        color: card.landmarkColor,
+        opacity: card.landmarkOpacity,
+        dotSize: card.landmarkDotSize,
+        lineThickness: card.landmarkLineThickness,
+      };
+
+      drawDetailScanOverlay({
+        canvas: exportHeroCanvasRef.current,
+        image: exportHeroImageRef.current,
+        status: faceStatus,
+        meshPoints,
+        progress: scanProgress,
+        overlayStyle,
+      });
+
+      drawDetailScanOverlay({
+        canvas: exportResultsCanvasRef.current,
+        image: exportResultsImageRef.current,
+        status: faceStatus,
+        meshPoints,
+        progress: 1,
+        overlayStyle,
+      });
+      await waitForAnimationFrame();
+
       const frame = await renderExportCanvas({
         node: sourceNode,
         width: EXPORT_PORTRAIT_LAYOUT_WIDTH,
@@ -2118,15 +2148,17 @@ function AscendEditorScreen({
       ffmpeg.on('progress', progressListener);
       setExportProgress(12);
 
-      setAnimationNonce((current) => current + 1);
-      await wait(80);
-      setExportFrameProgress(0);
-      await waitForAnimationFrame();
-
       const sourceNode = exportPreviewCardRef.current;
       if (!sourceNode) {
         throw new Error('Could not prepare the export preview.');
       }
+
+      await waitForExportNodeReady(sourceNode);
+      setAnimationNonce((current) => current + 1);
+      await wait(80);
+      setExportFrameProgress(0);
+      await waitForAnimationFrame();
+      await waitForAnimationFrame();
 
       const width = EXPORT_PORTRAIT_LAYOUT_WIDTH;
       const height = EXPORT_PORTRAIT_LAYOUT_HEIGHT;
@@ -2261,6 +2293,17 @@ function AscendEditorScreen({
 
       const outputName = `omnimaxx-ascend-${Date.now()}.png`;
       await waitForExportNodeReady(sourceNode);
+      drawFaceMesh({
+        canvas: exportMeshCanvasRef.current,
+        image: exportHeroImageRef.current,
+        status: card.image ? faceStatus : 'idle',
+        meshPoints,
+        meshDrawProgress: 1,
+        meshColor: card.meshColor,
+        meshOpacity: card.meshOpacity,
+      });
+      await waitForAnimationFrame();
+
       const frame = await renderExportCanvas({
         node: sourceNode,
         width: EXPORT_PORTRAIT_LAYOUT_WIDTH,
