@@ -777,6 +777,7 @@ function MinimalEditorScreen({
 
     try {
       setExportFrameProgress(1);
+      await wait(80);
       await waitForAnimationFrame();
 
       const sourceNode = exportPreviewCardRef.current;
@@ -785,30 +786,24 @@ function MinimalEditorScreen({
       }
       const width = EXPORT_LAYOUT_SIZE;
       const height = EXPORT_LAYOUT_SIZE;
+      const captureSize = EXPORT_VIDEO_SIZE;
       const outputSize = EXPORT_IMAGE_SIZE;
       const outputName = `omnimaxx-scorecard-${Date.now()}.png`;
 
       setExportProgress(25);
       await waitForExportNodeReady(sourceNode);
 
-      const frame = await toCanvas(sourceNode, {
-        cacheBust: true,
+      const frame = await renderExportCanvas({
+        node: sourceNode,
         width,
         height,
-        canvasWidth: outputSize,
-        canvasHeight: outputSize,
-        pixelRatio: 1,
-        backgroundColor: '#000000',
-        skipAutoScale: true,
-        style: {
-          width: `${width}px`,
-          height: `${height}px`,
-        },
-        filter: (node) => !(node instanceof HTMLElement && node.dataset.exportIgnore === 'true'),
+        canvasWidth: captureSize,
+        canvasHeight: captureSize,
       });
 
       setExportProgress(75);
-      const blob = await canvasToBlob(frame);
+      const upscaledFrame = upscaleCanvas(frame, outputSize, outputSize);
+      const blob = await canvasToBlob(upscaledFrame);
       downloadBlob(blob, outputName);
       setExportMessage('4K PNG exported.');
       setExportProgress(100);
@@ -1449,6 +1444,7 @@ function DetailedBreakdownEditorScreen({
 
     try {
       setExportFrameProgress(1);
+      await wait(80);
       await waitForAnimationFrame();
 
       const sourceNode = exportPreviewCardRef.current;
@@ -1458,24 +1454,17 @@ function DetailedBreakdownEditorScreen({
 
       const outputName = `omnimaxx-detailed-breakdown-${Date.now()}.png`;
       await waitForExportNodeReady(sourceNode);
-      const frame = await toCanvas(sourceNode, {
-        cacheBust: true,
+      const frame = await renderExportCanvas({
+        node: sourceNode,
         width: EXPORT_PORTRAIT_LAYOUT_WIDTH,
         height: EXPORT_PORTRAIT_LAYOUT_HEIGHT,
-        canvasWidth: EXPORT_PORTRAIT_IMAGE_WIDTH,
-        canvasHeight: EXPORT_PORTRAIT_IMAGE_HEIGHT,
-        pixelRatio: 1,
-        backgroundColor: '#000000',
-        skipAutoScale: true,
-        style: {
-          width: `${EXPORT_PORTRAIT_LAYOUT_WIDTH}px`,
-          height: `${EXPORT_PORTRAIT_LAYOUT_HEIGHT}px`,
-        },
-        filter: (node) => !(node instanceof HTMLElement && node.dataset.exportIgnore === 'true'),
+        canvasWidth: EXPORT_PORTRAIT_VIDEO_WIDTH,
+        canvasHeight: EXPORT_PORTRAIT_VIDEO_HEIGHT,
       });
 
       setExportProgress(75);
-      const blob = await canvasToBlob(frame);
+      const upscaledFrame = upscaleCanvas(frame, EXPORT_PORTRAIT_IMAGE_WIDTH, EXPORT_PORTRAIT_IMAGE_HEIGHT);
+      const blob = await canvasToBlob(upscaledFrame);
       downloadBlob(blob, outputName);
       setExportMessage('4K PNG exported.');
       setExportProgress(100);
@@ -2244,6 +2233,7 @@ function AscendEditorScreen({
 
     try {
       setExportFrameProgress(1);
+      await wait(80);
       await waitForAnimationFrame();
 
       const sourceNode = exportPreviewCardRef.current;
@@ -2253,24 +2243,17 @@ function AscendEditorScreen({
 
       const outputName = `omnimaxx-ascend-${Date.now()}.png`;
       await waitForExportNodeReady(sourceNode);
-      const frame = await toCanvas(sourceNode, {
-        cacheBust: true,
+      const frame = await renderExportCanvas({
+        node: sourceNode,
         width: EXPORT_PORTRAIT_LAYOUT_WIDTH,
         height: EXPORT_PORTRAIT_LAYOUT_HEIGHT,
-        canvasWidth: EXPORT_PORTRAIT_IMAGE_WIDTH,
-        canvasHeight: EXPORT_PORTRAIT_IMAGE_HEIGHT,
-        pixelRatio: 1,
-        backgroundColor: '#000000',
-        skipAutoScale: true,
-        style: {
-          width: `${EXPORT_PORTRAIT_LAYOUT_WIDTH}px`,
-          height: `${EXPORT_PORTRAIT_LAYOUT_HEIGHT}px`,
-        },
-        filter: (node) => !(node instanceof HTMLElement && node.dataset.exportIgnore === 'true'),
+        canvasWidth: EXPORT_PORTRAIT_VIDEO_WIDTH,
+        canvasHeight: EXPORT_PORTRAIT_VIDEO_HEIGHT,
       });
 
       setExportProgress(75);
-      const blob = await canvasToBlob(frame);
+      const upscaledFrame = upscaleCanvas(frame, EXPORT_PORTRAIT_IMAGE_WIDTH, EXPORT_PORTRAIT_IMAGE_HEIGHT);
+      const blob = await canvasToBlob(upscaledFrame);
       downloadBlob(blob, outputName);
       setExportMessage('4K PNG exported.');
       setExportProgress(100);
@@ -3351,6 +3334,56 @@ async function waitForExportNodeReady(node: HTMLElement) {
   await waitForAnimationFrame();
   await waitForAnimationFrame();
   await wait(60);
+}
+
+function renderExportCanvas({
+  node,
+  width,
+  height,
+  canvasWidth,
+  canvasHeight,
+}: {
+  node: HTMLElement;
+  width: number;
+  height: number;
+  canvasWidth: number;
+  canvasHeight: number;
+}) {
+  return toCanvas(node, {
+    cacheBust: true,
+    width,
+    height,
+    canvasWidth,
+    canvasHeight,
+    pixelRatio: 1,
+    backgroundColor: '#000000',
+    skipAutoScale: true,
+    style: {
+      width: `${width}px`,
+      height: `${height}px`,
+    },
+    filter: (node) => !(node instanceof HTMLElement && node.dataset.exportIgnore === 'true'),
+  });
+}
+
+function upscaleCanvas(source: HTMLCanvasElement, width: number, height: number) {
+  if (source.width === width && source.height === height) {
+    return source;
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d');
+
+  if (!context) {
+    throw new Error('Could not create the export canvas.');
+  }
+
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = 'high';
+  context.drawImage(source, 0, 0, width, height);
+  return canvas;
 }
 
 function canvasToBlob(canvas: HTMLCanvasElement) {
