@@ -1275,6 +1275,12 @@ button {
     linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 52%) !important;
 }
 
+.preview-card--capture .score-box__fill,
+.ascend-card--capture .ascend-score-card__fill,
+.portrait-card--capture .portrait-analysis-bar__fill {
+  box-shadow: none !important;
+}
+
 .preview-card--capture .preview-avatar__badge,
 .portrait-card--capture .portrait-shot__badge,
 .portrait-card--capture .portrait-results-avatar__badge,

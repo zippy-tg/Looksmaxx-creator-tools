@@ -1768,6 +1768,9 @@ function DetailedPreviewCard({
               src="/omnimaxx-app-icon.png"
               alt="OmniMaxx app icon"
               className="portrait-appbar__logo"
+              loading="eager"
+              decoding="sync"
+              fetchPriority="high"
             />
             <span className="portrait-appbar__name">OMNIMAXX</span>
           </div>
@@ -1777,6 +1780,9 @@ function DetailedPreviewCard({
               src="/app-store-logo.png"
               alt="App Store"
               className="portrait-appbar__store-image"
+              loading="eager"
+              decoding="sync"
+              fetchPriority="high"
             />
           </div>
         </div>
@@ -1799,6 +1805,9 @@ function DetailedPreviewCard({
                   alt="Front profile preview"
                   className="portrait-shot__image"
                   onLoad={onImageLoad}
+                  loading="eager"
+                  decoding="sync"
+                  fetchPriority="high"
                 />
                 <canvas
                   ref={heroCanvasRef}
@@ -1817,6 +1826,9 @@ function DetailedPreviewCard({
                 src="/omnimaxx-app-icon.png"
                 alt=""
                 className="portrait-shot__badge-image"
+                loading="eager"
+                decoding="sync"
+                fetchPriority="high"
               />
             </div>
           </button>
@@ -1850,6 +1862,9 @@ function DetailedPreviewCard({
                   alt="Detailed breakdown avatar"
                   className="portrait-results-avatar__image"
                   onLoad={onImageLoad}
+                  loading="eager"
+                  decoding="sync"
+                  fetchPriority="high"
                 />
                 <canvas
                   ref={resultsCanvasRef}
@@ -1868,6 +1883,9 @@ function DetailedPreviewCard({
                 src="/omnimaxx-app-icon.png"
                 alt=""
                 className="portrait-results-avatar__badge-image"
+                loading="eager"
+                decoding="sync"
+                fetchPriority="high"
               />
             </div>
           </div>
@@ -2560,6 +2578,9 @@ function AscendPreviewCard({
               src="/omnimaxx-app-icon.png"
               alt="OmniMaxx app icon"
               className="portrait-appbar__logo"
+              loading="eager"
+              decoding="sync"
+              fetchPriority="high"
             />
             <span className="portrait-appbar__name">OMNIMAXX</span>
           </div>
@@ -2569,6 +2590,9 @@ function AscendPreviewCard({
               src="/app-store-logo.png"
               alt="App Store"
               className="portrait-appbar__store-image"
+              loading="eager"
+              decoding="sync"
+              fetchPriority="high"
             />
           </div>
         </div>
@@ -2584,6 +2608,9 @@ function AscendPreviewCard({
                 alt="Ascend preview"
                 className="ascend-hero__image"
                 onLoad={onHeroLoad}
+                loading="eager"
+                decoding="sync"
+                fetchPriority="high"
               />
               {effectiveFaceStatus === 'detected' && (
                 <canvas
@@ -2604,6 +2631,9 @@ function AscendPreviewCard({
               src="/omnimaxx-app-icon.png"
               alt=""
               className="ascend-hero__badge-image"
+              loading="eager"
+              decoding="sync"
+              fetchPriority="high"
             />
           </div>
         </button>
@@ -2733,6 +2763,9 @@ function PreviewCard({
             src="/omnimaxx-app-icon.png"
             alt="OmniMaxx app icon"
             className="preview-brand__logo"
+            loading="eager"
+            decoding="sync"
+            fetchPriority="high"
           />
           <span className="preview-brand__name">OMNIMAXX</span>
         </div>
@@ -2742,6 +2775,9 @@ function PreviewCard({
             src="/app-store-logo.png"
             alt="App Store"
             className="preview-store__image"
+            loading="eager"
+            decoding="sync"
+            fetchPriority="high"
           />
         </div>
       </div>
@@ -2768,6 +2804,9 @@ function PreviewCard({
                   alt="Avatar preview"
                   className="preview-avatar__image"
                   onLoad={onAvatarLoad}
+                  loading="eager"
+                  decoding="sync"
+                  fetchPriority="high"
                 />
                 {effectiveFaceStatus === 'detected' && (
                   <canvas
@@ -2788,6 +2827,9 @@ function PreviewCard({
                 src="/omnimaxx-app-icon.png"
                 alt=""
                 className="preview-avatar__badge-image"
+                loading="eager"
+                decoding="sync"
+                fetchPriority="high"
               />
             </div>
           </button>
