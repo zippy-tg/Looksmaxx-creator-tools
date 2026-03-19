@@ -789,6 +789,7 @@ function MinimalEditorScreen({
       const outputName = `omnimaxx-scorecard-${Date.now()}.png`;
 
       setExportProgress(25);
+      await waitForExportNodeReady(sourceNode);
 
       const frame = await toCanvas(sourceNode, {
         cacheBust: true,
@@ -1456,6 +1457,7 @@ function DetailedBreakdownEditorScreen({
       }
 
       const outputName = `omnimaxx-detailed-breakdown-${Date.now()}.png`;
+      await waitForExportNodeReady(sourceNode);
       const frame = await toCanvas(sourceNode, {
         cacheBust: true,
         width: EXPORT_PORTRAIT_LAYOUT_WIDTH,
@@ -2250,6 +2252,7 @@ function AscendEditorScreen({
       }
 
       const outputName = `omnimaxx-ascend-${Date.now()}.png`;
+      await waitForExportNodeReady(sourceNode);
       const frame = await toCanvas(sourceNode, {
         cacheBust: true,
         width: EXPORT_PORTRAIT_LAYOUT_WIDTH,
@@ -3319,6 +3322,35 @@ function wait(ms: number) {
 
 function waitForAnimationFrame() {
   return new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)));
+}
+
+async function waitForExportNodeReady(node: HTMLElement) {
+  const images = Array.from(node.querySelectorAll('img'));
+
+  await Promise.all(
+    images.map((image) => {
+      if (image.complete && image.naturalWidth > 0) {
+        return typeof image.decode === 'function'
+          ? image.decode().catch(() => undefined)
+          : Promise.resolve();
+      }
+
+      return new Promise<void>((resolve) => {
+        const handleDone = () => {
+          image.removeEventListener('load', handleDone);
+          image.removeEventListener('error', handleDone);
+          resolve();
+        };
+
+        image.addEventListener('load', handleDone, { once: true });
+        image.addEventListener('error', handleDone, { once: true });
+      });
+    }),
+  );
+
+  await waitForAnimationFrame();
+  await waitForAnimationFrame();
+  await wait(60);
 }
 
 function canvasToBlob(canvas: HTMLCanvasElement) {
