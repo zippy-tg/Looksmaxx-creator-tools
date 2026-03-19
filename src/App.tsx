@@ -88,7 +88,7 @@ const INITIAL_CARD: ScorecardState = {
   meshOpacity: 0.42,
 };
 
-const TIER_OPTIONS = ['SUB 5', 'LTN', 'MTN', 'HTN', 'CHAD LITE', 'CHAD', 'ADAM'] as const;
+const TIER_OPTIONS = ['SUB 5', 'LTN', 'MTN', 'HTN', 'CHAD LITE', 'CHAD', 'ADAM', 'LTB', 'MTB', 'HTB', 'STACY'] as const;
 
 const INITIAL_DETAILED_CARD: DetailedBreakdownState = {
   frontImage: null,
@@ -670,7 +670,18 @@ function MinimalEditorScreen({
       setExportProgress(18);
 
       for (let frameIndex = 0; frameIndex < totalFrames; frameIndex += 1) {
-        setExportFrameProgress(frameIndex / (totalFrames - 1));
+        const frameProgress = frameIndex / (totalFrames - 1);
+        setExportFrameProgress(frameProgress);
+        await waitForAnimationFrame();
+        drawFaceMesh({
+          canvas: exportMeshCanvasRef.current,
+          image: exportAvatarImageRef.current,
+          status: effectiveFaceStatus,
+          meshPoints,
+          meshDrawProgress: easedProgress(windowedProgress(frameProgress, 0.16, 0.78)),
+          meshColor: card.meshColor,
+          meshOpacity: card.meshOpacity,
+        });
         await waitForAnimationFrame();
 
         const frame = await toCanvas(sourceNode, {
@@ -794,6 +805,16 @@ function MinimalEditorScreen({
 
       setExportProgress(25);
       await waitForExportNodeReady(sourceNode);
+      drawFaceMesh({
+        canvas: exportMeshCanvasRef.current,
+        image: exportAvatarImageRef.current,
+        status: effectiveFaceStatus,
+        meshPoints,
+        meshDrawProgress: 1,
+        meshColor: card.meshColor,
+        meshOpacity: card.meshOpacity,
+      });
+      await waitForAnimationFrame();
 
       const frame = await renderExportCanvas({
         node: sourceNode,
