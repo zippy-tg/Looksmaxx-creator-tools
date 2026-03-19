@@ -2,14 +2,23 @@ import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import * as tf from '@tensorflow/tfjs-core';
 import '@tensorflow/tfjs-backend-webgl';
 import * as faceLandmarksDetection from '@tensorflow-models/face-landmarks-detection';
+import * as poseDetection from '@tensorflow-models/pose-detection';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { toBlobURL } from '@ffmpeg/util';
 import { toCanvas } from 'html-to-image';
 import { ArrowLeft, ChevronRight, ImagePlus, ScanFace } from 'lucide-react';
 import './index.css';
 
-type Screen = 'home' | 'face-analysis' | 'category-intro' | 'minimal-rating-potential' | 'detailed-breakdown' | 'ascend';
-type CategoryScreen = Exclude<Screen, 'home' | 'face-analysis' | 'category-intro'>;
+type Screen =
+  | 'home'
+  | 'face-analysis'
+  | 'height-posture-analysis'
+  | 'category-intro'
+  | 'minimal-rating-potential'
+  | 'detailed-breakdown'
+  | 'ascend'
+  | 'height-posture-detailed';
+type CategoryScreen = 'minimal-rating-potential' | 'detailed-breakdown' | 'ascend' | 'height-posture-detailed';
 
 interface ScorecardState {
   image: string | null;
@@ -111,6 +120,27 @@ const INITIAL_DETAILED_CARD: DetailedBreakdownState = {
   badgeBorderEnd: '#496ef9',
 };
 
+const INITIAL_HEIGHT_POSTURE_CARD: DetailedBreakdownState = {
+  frontImage: null,
+  sideImage: null,
+  overallScore: 6.8,
+  harmonyScore: 7.4,
+  angularityScore: 6.9,
+  dimorphismScore: 7.1,
+  featuresScore: 6.6,
+  symmetryScore: 6.8,
+  proportionsScore: 7.3,
+  accentStart: '#a8d9b8',
+  accentEnd: '#d8eed4',
+  scoreColor: '#d8eed4',
+  landmarkColor: '#ff5a52',
+  landmarkOpacity: 0.88,
+  landmarkDotSize: 3.2,
+  landmarkLineThickness: 1.6,
+  badgeBorderStart: '#9cb5ff',
+  badgeBorderEnd: '#496ef9',
+};
+
 const INITIAL_ASCEND_CARD: AscendState = {
   image: null,
   pslScore: 6.8,
@@ -129,13 +159,32 @@ const INITIAL_ASCEND_CARD: AscendState = {
 
 const FACE_MESH_MODEL = faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh;
 const FACE_MESH_EDGES = faceLandmarksDetection.util.getAdjacentPairs(FACE_MESH_MODEL);
+const BODY_POSE_MODEL = poseDetection.SupportedModels.MoveNet;
+const BODY_CONNECTIONS: Array<[number, number]> = [
+  [0, 5],
+  [0, 6],
+  [5, 6],
+  [5, 7],
+  [7, 9],
+  [6, 8],
+  [8, 10],
+  [5, 11],
+  [6, 12],
+  [11, 12],
+  [11, 13],
+  [13, 15],
+  [12, 14],
+  [14, 16],
+];
 
 let faceMeshDetectorPromise: Promise<Awaited<ReturnType<typeof faceLandmarksDetection.createDetector>>> | null = null;
+let poseDetectorPromise: Promise<Awaited<ReturnType<typeof poseDetection.createDetector>>> | null = null;
 let ffmpegPromise: Promise<FFmpeg> | null = null;
 
 type FaceStatus = 'idle' | 'detecting' | 'detected' | 'no-face' | 'error';
 type MeshPoint = { x: number; y: number };
 type AnimationDurationMs = 1500 | 3000;
+type DetectionMode = 'face' | 'body';
 type DetailedMetrics = {
   eyeSpacingPercent: number;
   jawWidthPercent: number;
@@ -176,6 +225,22 @@ async function getFaceMeshDetector() {
   return faceMeshDetectorPromise;
 }
 
+async function getPoseDetector() {
+  if (!poseDetectorPromise) {
+    poseDetectorPromise = (async () => {
+      await tf.setBackend('webgl');
+      await tf.ready();
+
+      return poseDetection.createDetector(BODY_POSE_MODEL, {
+        modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
+        enableSmoothing: true,
+      });
+    })();
+  }
+
+  return poseDetectorPromise;
+}
+
 async function getFFmpeg() {
   if (!ffmpegPromise) {
     const ffmpeg = new FFmpeg();
@@ -197,6 +262,7 @@ function App() {
   const [pendingCategory, setPendingCategory] = useState<CategoryScreen | null>(null);
   const [card, setCard] = useState<ScorecardState>(INITIAL_CARD);
   const [detailedCard, setDetailedCard] = useState<DetailedBreakdownState>(INITIAL_DETAILED_CARD);
+  const [heightPostureCard, setHeightPostureCard] = useState<DetailedBreakdownState>(INITIAL_HEIGHT_POSTURE_CARD);
   const [ascendCard, setAscendCard] = useState<AscendState>(INITIAL_ASCEND_CARD);
   const fileRef = useRef<HTMLInputElement>(null);
   const detailedFrontFileRef = useRef<HTMLInputElement>(null);
@@ -232,6 +298,12 @@ function App() {
     });
   };
 
+  const handleHeightPostureFrontImage = (event: ChangeEvent<HTMLInputElement>) => {
+    readImageInput(event, (imageData) => {
+      setHeightPostureCard((current) => ({ ...current, frontImage: imageData }));
+    });
+  };
+
   const handleAscendImage = (event: ChangeEvent<HTMLInputElement>) => {
     readImageInput(event, (imageData) => {
       setAscendCard((current) => ({ ...current, image: imageData }));
@@ -243,6 +315,13 @@ function App() {
     value: DetailedBreakdownState[K],
   ) => {
     setDetailedCard((current) => ({ ...current, [field]: value }));
+  };
+
+  const setHeightPostureField = <K extends keyof DetailedBreakdownState>(
+    field: K,
+    value: DetailedBreakdownState[K],
+  ) => {
+    setHeightPostureCard((current) => ({ ...current, [field]: value }));
   };
 
   const setField = <K extends keyof ScorecardState>(field: K, value: ScorecardState[K]) => {
@@ -258,9 +337,16 @@ function App() {
     setScreen('category-intro');
   };
 
+  const categoryParentScreen = pendingCategory === 'height-posture-detailed' ? 'height-posture-analysis' : 'face-analysis';
+
   return (
     <div className="shell">
-      {screen === 'home' && <HomeScreen onOpen={() => setScreen('face-analysis')} />}
+      {screen === 'home' && (
+        <HomeScreen
+          onOpenFaceAnalysis={() => setScreen('face-analysis')}
+          onOpenHeightPosture={() => setScreen('height-posture-analysis')}
+        />
+      )}
 
       {screen === 'face-analysis' && (
         <FaceAnalysisScreen
@@ -274,7 +360,7 @@ function App() {
       {screen === 'category-intro' && pendingCategory && (
         <CategoryIntroScreen
           category={pendingCategory}
-          onBack={() => setScreen('face-analysis')}
+          onBack={() => setScreen(categoryParentScreen)}
           onContinue={() => setScreen(pendingCategory)}
         />
       )}
@@ -311,6 +397,30 @@ function App() {
           onChange={setAscendField}
         />
       )}
+
+      {screen === 'height-posture-analysis' && (
+        <HeightPostureAnalysisScreen
+          onBack={() => setScreen('home')}
+          onOpenDetailed={() => openCategory('height-posture-detailed')}
+        />
+      )}
+
+      {screen === 'height-posture-detailed' && (
+        <DetailedBreakdownEditorScreen
+          card={heightPostureCard}
+          frontFileRef={detailedFrontFileRef}
+          onBack={() => setScreen('height-posture-analysis')}
+          onOpenFrontPicker={() => detailedFrontFileRef.current?.click()}
+          onFrontImageChange={handleHeightPostureFrontImage}
+          onChange={setHeightPostureField}
+          title="Detailed Height/Posture Analysis"
+          description="Build the vertical 9:16 height and posture card for creator edits."
+          templateLabel="Height/Posture"
+          scoreLabels={['Overall', 'Height', 'Posture', 'Frame', 'Presence', 'Balance', 'Proportions']}
+          scanLabelsDetected={['Height read', 'Posture read', 'Frame read', 'Balance read', 'Compiling results']}
+          detectionMode="body"
+        />
+      )}
     </div>
   );
 }
@@ -326,7 +436,13 @@ function downloadBlob(blob: Blob, fileName: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
-function HomeScreen({ onOpen }: { onOpen: () => void }) {
+function HomeScreen({
+  onOpenFaceAnalysis,
+  onOpenHeightPosture,
+}: {
+  onOpenFaceAnalysis: () => void;
+  onOpenHeightPosture: () => void;
+}) {
   return (
     <div className="home-shell">
       <header className="home-header">
@@ -334,7 +450,7 @@ function HomeScreen({ onOpen }: { onOpen: () => void }) {
       </header>
 
       <main className="home-main">
-        <button className="tool-card" onClick={onOpen}>
+        <button className="tool-card" onClick={onOpenFaceAnalysis}>
           <div className="tool-card__left">
             <div className="tool-card__icon">
               <ScanFace size={24} />
@@ -342,6 +458,20 @@ function HomeScreen({ onOpen }: { onOpen: () => void }) {
             <div>
               <h2>Face Analysis</h2>
               <p>Create scorecards for creator videos</p>
+            </div>
+          </div>
+
+          <ChevronRight size={20} />
+        </button>
+
+        <button className="tool-card" onClick={onOpenHeightPosture}>
+          <div className="tool-card__left">
+            <div className="tool-card__icon">
+              <ScanFace size={24} />
+            </div>
+            <div>
+              <h2>Height/Posture Analysis</h2>
+              <p>Create body analysis layouts for creator videos</p>
             </div>
           </div>
 
@@ -421,7 +551,9 @@ function CategoryIntroScreen({
       ? 'Minimal Rating & Potential'
       : category === 'detailed-breakdown'
         ? 'Detailed Breakdown'
-        : 'ASCEND';
+        : category === 'ascend'
+          ? 'ASCEND'
+          : 'Detailed Height/Posture Analysis';
 
   return (
     <div className="page page--simple">
@@ -446,6 +578,39 @@ function CategoryIntroScreen({
             <span>Continue</span>
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function HeightPostureAnalysisScreen({
+  onBack,
+  onOpenDetailed,
+}: {
+  onBack: () => void;
+  onOpenDetailed: () => void;
+}) {
+  return (
+    <div className="page page--simple">
+      <button className="back-button" onClick={onBack}>
+        <ArrowLeft size={16} />
+        <span>Back</span>
+      </button>
+
+      <div className="section-copy">
+        <h1>Height/Posture Analysis</h1>
+        <p>Choose a scorecard format.</p>
+      </div>
+
+      <div className="category-stack">
+        <button className="category-card category-card--active" onClick={onOpenDetailed}>
+          <div className="category-card__copy">
+            <h2>Detailed Height/Posture Analysis</h2>
+            <p>Portrait-style posture and height layout for creator edits</p>
+            <span className="category-card__meta">Photo + video</span>
+          </div>
+          <ChevronRight size={18} />
+        </button>
       </div>
     </div>
   );
@@ -1101,6 +1266,12 @@ function DetailedBreakdownEditorScreen({
   onOpenFrontPicker,
   onFrontImageChange,
   onChange,
+  title = 'Detailed Breakdown',
+  description = 'Build the vertical 9:16 breakdown card for creator edits.',
+  templateLabel = 'Detailed',
+  scoreLabels = ['Overall', 'Harmony', 'Structure', 'Presence', 'Features', 'Symmetry', 'Proportions'],
+  scanLabelsDetected,
+  detectionMode = 'face',
 }: {
   card: DetailedBreakdownState;
   frontFileRef: React.RefObject<HTMLInputElement | null>;
@@ -1108,6 +1279,12 @@ function DetailedBreakdownEditorScreen({
   onOpenFrontPicker: () => void;
   onFrontImageChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onChange: <K extends keyof DetailedBreakdownState>(field: K, value: DetailedBreakdownState[K]) => void;
+  title?: string;
+  description?: string;
+  templateLabel?: string;
+  scoreLabels?: readonly [string, string, string, string, string, string, string];
+  scanLabelsDetected?: readonly [string, string, string, string, string];
+  detectionMode?: DetectionMode;
 }) {
   const [animationNonce, setAnimationNonce] = useState(0);
   const [animationDurationMs, setAnimationDurationMs] = useState<AnimationDurationMs>(3000);
@@ -1130,24 +1307,33 @@ function DetailedBreakdownEditorScreen({
   const exportResultsCanvasRef = useRef<HTMLCanvasElement>(null);
   const exportPreviewCardRef = useRef<HTMLDivElement>(null);
   const effectiveAnimationProgress = exportFrameProgress ?? animationProgress;
+  const [overallLabel, scoreLabel1, scoreLabel2, scoreLabel3, scoreLabel4, scoreLabel5, scoreLabel6] = scoreLabels;
   const featureRows = [
-    ['Overall', card.overallScore],
-    ['Harmony', card.harmonyScore],
-    ['Structure', card.angularityScore],
-    ['Presence', card.dimorphismScore],
-    ['Features', card.featuresScore],
-    ['Symmetry', card.symmetryScore],
-    ['Proportions', card.proportionsScore],
+    [overallLabel, card.overallScore],
+    [scoreLabel1, card.harmonyScore],
+    [scoreLabel2, card.angularityScore],
+    [scoreLabel3, card.dimorphismScore],
+    [scoreLabel4, card.featuresScore],
+    [scoreLabel5, card.symmetryScore],
+    [scoreLabel6, card.proportionsScore],
   ] as const;
   const scanLabels =
     faceStatus === 'detected' && metrics
-      ? [
-          `Eye spacing ${Math.round(metrics.eyeSpacingPercent)}%`,
-          `Jaw width ${Math.round(metrics.jawWidthPercent)}%`,
-          `Midface ${Math.round(metrics.midfacePercent)}%`,
-          `Symmetry ${Math.round(metrics.symmetryPercent)}%`,
-          'Compiling results',
-        ]
+      ? scanLabelsDetected
+        ? [
+            `${scanLabelsDetected[0]} ${Math.round(metrics.eyeSpacingPercent)}%`,
+            `${scanLabelsDetected[1]} ${Math.round(metrics.jawWidthPercent)}%`,
+            `${scanLabelsDetected[2]} ${Math.round(metrics.midfacePercent)}%`,
+            `${scanLabelsDetected[3]} ${Math.round(metrics.symmetryPercent)}%`,
+            scanLabelsDetected[4],
+          ]
+        : [
+            `Eye spacing ${Math.round(metrics.eyeSpacingPercent)}%`,
+            `Jaw width ${Math.round(metrics.jawWidthPercent)}%`,
+            `Midface ${Math.round(metrics.midfacePercent)}%`,
+            `Symmetry ${Math.round(metrics.symmetryPercent)}%`,
+            'Compiling results',
+          ]
       : faceStatus === 'no-face'
         ? ['No face detected']
         : faceStatus === 'error'
@@ -1210,25 +1396,47 @@ function DetailedBreakdownEditorScreen({
 
     image.onload = async () => {
       try {
-        const detector = await getFaceMeshDetector();
-        const faces = await detector.estimateFaces(image, {
-          flipHorizontal: false,
-          staticImageMode: true,
-        });
+        if (detectionMode === 'body') {
+          const detector = await getPoseDetector();
+          const poses = await detector.estimatePoses(image, {
+            flipHorizontal: false,
+            maxPoses: 1,
+          });
 
-        if (cancelled) {
-          return;
+          if (cancelled) {
+            return;
+          }
+
+          if (poses.length === 0 || poses[0].keypoints.length === 0) {
+            setFaceStatus('no-face');
+            return;
+          }
+
+          const points = poses[0].keypoints.map((point) => ({ x: point.x, y: point.y }));
+          setMeshPoints(points);
+          setMetrics(calculateBodyMetrics(points));
+          setFaceStatus('detected');
+        } else {
+          const detector = await getFaceMeshDetector();
+          const faces = await detector.estimateFaces(image, {
+            flipHorizontal: false,
+            staticImageMode: true,
+          });
+
+          if (cancelled) {
+            return;
+          }
+
+          if (faces.length === 0) {
+            setFaceStatus('no-face');
+            return;
+          }
+
+          const points = faces[0].keypoints.map((point) => ({ x: point.x, y: point.y }));
+          setMeshPoints(points);
+          setMetrics(calculateDetailedMetrics(points));
+          setFaceStatus('detected');
         }
-
-        if (faces.length === 0) {
-          setFaceStatus('no-face');
-          return;
-        }
-
-        const points = faces[0].keypoints.map((point) => ({ x: point.x, y: point.y }));
-        setMeshPoints(points);
-        setMetrics(calculateDetailedMetrics(points));
-        setFaceStatus('detected');
       } catch {
         if (!cancelled) {
           setFaceStatus('error');
@@ -1248,7 +1456,7 @@ function DetailedBreakdownEditorScreen({
       cancelled = true;
       cancelAnimationFrame(resetFrameId);
     };
-  }, [card.frontImage]);
+  }, [card.frontImage, detectionMode]);
 
   useEffect(() => {
     const overlayStyle: DetailOverlayStyle = {
@@ -1258,7 +1466,9 @@ function DetailedBreakdownEditorScreen({
       lineThickness: card.landmarkLineThickness,
     };
 
-    drawDetailScanOverlay({
+    const drawOverlay = detectionMode === 'body' ? drawBodyScanOverlay : drawDetailScanOverlay;
+
+    drawOverlay({
       canvas: heroCanvasRef.current,
       image: heroImageRef.current,
       status: faceStatus,
@@ -1267,7 +1477,7 @@ function DetailedBreakdownEditorScreen({
       overlayStyle,
     });
 
-    drawDetailScanOverlay({
+    drawOverlay({
       canvas: resultsCanvasRef.current,
       image: resultsImageRef.current,
       status: faceStatus,
@@ -1276,7 +1486,7 @@ function DetailedBreakdownEditorScreen({
       overlayStyle,
     });
 
-    drawDetailScanOverlay({
+    drawOverlay({
       canvas: exportHeroCanvasRef.current,
       image: exportHeroImageRef.current,
       status: faceStatus,
@@ -1285,7 +1495,7 @@ function DetailedBreakdownEditorScreen({
       overlayStyle,
     });
 
-    drawDetailScanOverlay({
+    drawOverlay({
       canvas: exportResultsCanvasRef.current,
       image: exportResultsImageRef.current,
       status: faceStatus,
@@ -1299,6 +1509,7 @@ function DetailedBreakdownEditorScreen({
     card.landmarkDotSize,
     card.landmarkLineThickness,
     card.landmarkOpacity,
+    detectionMode,
     faceStatus,
     meshPoints,
     scanProgress,
@@ -1358,9 +1569,35 @@ function DetailedBreakdownEditorScreen({
 
       setExportMessage('Rendering frames...');
       setExportProgress(18);
+      const overlayStyle: DetailOverlayStyle = {
+        color: card.landmarkColor,
+        opacity: card.landmarkOpacity,
+        dotSize: card.landmarkDotSize,
+        lineThickness: card.landmarkLineThickness,
+      };
+      const drawOverlay = detectionMode === 'body' ? drawBodyScanOverlay : drawDetailScanOverlay;
 
       for (let frameIndex = 0; frameIndex < totalFrames; frameIndex += 1) {
-        setExportFrameProgress(frameIndex / (totalFrames - 1));
+        const frameProgress = frameIndex / (totalFrames - 1);
+        setExportFrameProgress(frameProgress);
+        await waitForAnimationFrame();
+        drawOverlay({
+          canvas: exportHeroCanvasRef.current,
+          image: exportHeroImageRef.current,
+          status: faceStatus,
+          meshPoints,
+          progress: easedProgress(windowedProgress(frameProgress, 0.08, 0.6)),
+          overlayStyle,
+        });
+
+        drawOverlay({
+          canvas: exportResultsCanvasRef.current,
+          image: exportResultsImageRef.current,
+          status: faceStatus,
+          meshPoints,
+          progress: 1,
+          overlayStyle,
+        });
         await waitForAnimationFrame();
 
         const frame = await toCanvas(sourceNode, {
@@ -1485,8 +1722,9 @@ function DetailedBreakdownEditorScreen({
         dotSize: card.landmarkDotSize,
         lineThickness: card.landmarkLineThickness,
       };
+      const drawOverlay = detectionMode === 'body' ? drawBodyScanOverlay : drawDetailScanOverlay;
 
-      drawDetailScanOverlay({
+      drawOverlay({
         canvas: exportHeroCanvasRef.current,
         image: exportHeroImageRef.current,
         status: faceStatus,
@@ -1495,7 +1733,7 @@ function DetailedBreakdownEditorScreen({
         overlayStyle,
       });
 
-      drawDetailScanOverlay({
+      drawOverlay({
         canvas: exportResultsCanvasRef.current,
         image: exportResultsImageRef.current,
         status: faceStatus,
@@ -1536,13 +1774,13 @@ function DetailedBreakdownEditorScreen({
       </button>
 
       <div className="editor-header">
-        <h1>Detailed Breakdown</h1>
-        <p>Build the vertical 9:16 breakdown card for creator edits.</p>
+        <h1>{title}</h1>
+        <p>{description}</p>
       </div>
 
       <div className="editor-layout">
         <aside className="editor-left">
-          <div className="template-pill">Detailed</div>
+          <div className="template-pill">{templateLabel}</div>
 
           <div className="compact-grid compact-grid--double detailed-top-grid">
             <Field label="Front Image">
@@ -1557,7 +1795,7 @@ function DetailedBreakdownEditorScreen({
                 onChange={onFrontImageChange}
               />
               <span className={`face-status face-status--${card.frontImage ? faceStatus : 'idle'}`}>
-                {getFaceStatusLabel(card.frontImage ? faceStatus : 'idle')}
+                {getDetectionStatusLabel(detectionMode, card.frontImage ? faceStatus : 'idle')}
               </span>
             </Field>
 
@@ -1578,37 +1816,37 @@ function DetailedBreakdownEditorScreen({
 
             <div className="compact-grid compact-grid--double">
               <FeatureInput
-                label="Overall"
+                label={overallLabel}
                 value={card.overallScore}
                 onChange={(value) => onChange('overallScore', value)}
               />
               <FeatureInput
-                label="Harmony"
+                label={scoreLabel1}
                 value={card.harmonyScore}
                 onChange={(value) => onChange('harmonyScore', value)}
               />
               <FeatureInput
-                label="Structure"
+                label={scoreLabel2}
                 value={card.angularityScore}
                 onChange={(value) => onChange('angularityScore', value)}
               />
               <FeatureInput
-                label="Presence"
+                label={scoreLabel3}
                 value={card.dimorphismScore}
                 onChange={(value) => onChange('dimorphismScore', value)}
               />
               <FeatureInput
-                label="Features"
+                label={scoreLabel4}
                 value={card.featuresScore}
                 onChange={(value) => onChange('featuresScore', value)}
               />
               <FeatureInput
-                label="Symmetry"
+                label={scoreLabel5}
                 value={card.symmetryScore}
                 onChange={(value) => onChange('symmetryScore', value)}
               />
               <FeatureInput
-                label="Proportions"
+                label={scoreLabel6}
                 value={card.proportionsScore}
                 onChange={(value) => onChange('proportionsScore', value)}
               />
@@ -1701,6 +1939,7 @@ function DetailedBreakdownEditorScreen({
               resultsImageRef={resultsImageRef}
               resultsCanvasRef={resultsCanvasRef}
               onImageLoad={() => setAvatarRenderTick((current) => current + 1)}
+              avatarShape={templateLabel === 'Height/Posture' ? 'rectangle' : 'circle'}
               showReplay
               onReplay={() => setAnimationNonce((current) => current + 1)}
             />
@@ -1752,6 +1991,7 @@ function DetailedBreakdownEditorScreen({
                 resultsImageRef={exportResultsImageRef}
                 resultsCanvasRef={exportResultsCanvasRef}
                 onImageLoad={() => setAvatarRenderTick((current) => current + 1)}
+                avatarShape={templateLabel === 'Height/Posture' ? 'rectangle' : 'circle'}
               />
             </div>
           </div>
@@ -1778,6 +2018,7 @@ function DetailedPreviewCard({
   resultsImageRef,
   resultsCanvasRef,
   onImageLoad,
+  avatarShape = 'circle',
   showReplay,
   onReplay,
 }: {
@@ -1797,6 +2038,7 @@ function DetailedPreviewCard({
   resultsImageRef: React.RefObject<HTMLImageElement | null>;
   resultsCanvasRef: React.RefObject<HTMLCanvasElement | null>;
   onImageLoad: () => void;
+  avatarShape?: 'circle' | 'rectangle';
   showReplay?: boolean;
   onReplay?: () => void;
 }) {
@@ -1847,7 +2089,10 @@ function DetailedPreviewCard({
             transform: `translateY(${(1 - analysisReveal) * 20}px) scale(${0.96 + analysisReveal * 0.04})`,
           }}
         >
-          <button className="portrait-shot portrait-shot--hero" onClick={onOpenFrontPicker}>
+          <button
+            className={`portrait-shot portrait-shot--hero ${avatarShape === 'rectangle' ? 'portrait-shot--hero-rect' : ''}`.trim()}
+            onClick={onOpenFrontPicker}
+          >
             {card.frontImage ? (
               <>
                 <img
@@ -1869,7 +2114,7 @@ function DetailedPreviewCard({
             ) : (
               <>
                 <ImagePlus size={26} />
-                <span>Front</span>
+                <span>{avatarShape === 'rectangle' ? 'Full Body' : 'Front'}</span>
               </>
             )}
             <div className="portrait-shot__badge" aria-hidden="true">
@@ -1904,7 +2149,7 @@ function DetailedPreviewCard({
           className="portrait-results-stage"
           style={getRevealStyle(resultsReveal, 24, 0.97)}
         >
-          <div className="portrait-results-avatar">
+          <div className={`portrait-results-avatar ${avatarShape === 'rectangle' ? 'portrait-results-avatar--rect' : ''}`.trim()}>
             {card.frontImage ? (
               <>
                 <img
@@ -2195,7 +2440,18 @@ function AscendEditorScreen({
       setExportProgress(18);
 
       for (let frameIndex = 0; frameIndex < totalFrames; frameIndex += 1) {
-        setExportFrameProgress(frameIndex / (totalFrames - 1));
+        const frameProgress = frameIndex / (totalFrames - 1);
+        setExportFrameProgress(frameProgress);
+        await waitForAnimationFrame();
+        drawFaceMesh({
+          canvas: exportMeshCanvasRef.current,
+          image: exportHeroImageRef.current,
+          status: card.image ? faceStatus : 'idle',
+          meshPoints,
+          meshDrawProgress: easedProgress(windowedProgress(frameProgress, 0.18, 0.74)),
+          meshColor: card.meshColor,
+          meshOpacity: card.meshOpacity,
+        });
         await waitForAnimationFrame();
 
         const frame = await toCanvas(sourceNode, {
@@ -3144,6 +3400,25 @@ function getFaceStatusLabel(status: FaceStatus) {
   }
 }
 
+function getDetectionStatusLabel(mode: DetectionMode, status: FaceStatus) {
+  if (mode === 'body') {
+    switch (status) {
+      case 'detecting':
+        return 'Detecting body...';
+      case 'detected':
+        return 'Body detected';
+      case 'no-face':
+        return 'No body detected';
+      case 'error':
+        return 'Body detection failed';
+      default:
+        return 'Upload an image to detect a body';
+    }
+  }
+
+  return getFaceStatusLabel(status);
+}
+
 function drawFaceMesh({
   canvas,
   image,
@@ -3237,6 +3512,38 @@ function calculateDetailedMetrics(meshPoints: MeshPoint[]): DetailedMetrics {
     jawWidthPercent: clampNumber((jawWidth / faceWidth) * 100, 0, 100),
     midfacePercent: clampNumber(midface * 100, 0, 100),
     symmetryPercent: clampNumber(symmetry * 100, 0, 100),
+  };
+}
+
+function calculateBodyMetrics(meshPoints: MeshPoint[]): DetailedMetrics {
+  const nose = meshPoints[0];
+  const leftShoulder = meshPoints[5];
+  const rightShoulder = meshPoints[6];
+  const leftHip = meshPoints[11];
+  const rightHip = meshPoints[12];
+  const leftAnkle = meshPoints[15];
+  const rightAnkle = meshPoints[16];
+
+  const shoulderWidth = distanceBetween(leftShoulder, rightShoulder) || 1;
+  const hipWidth = distanceBetween(leftHip, rightHip) || shoulderWidth;
+  const shoulderCenter = averagePoint([leftShoulder, rightShoulder]);
+  const hipCenter = averagePoint([leftHip, rightHip]);
+  const ankleCenter = averagePoint([leftAnkle, rightAnkle]);
+  const torsoHeight = distanceBetween(shoulderCenter, hipCenter) || 1;
+  const bodyHeight = distanceBetween(nose, ankleCenter) || distanceBetween(shoulderCenter, ankleCenter) || 1;
+  const shoulderTilt = leftShoulder && rightShoulder ? Math.abs(leftShoulder.y - rightShoulder.y) : 0;
+  const hipTilt = leftHip && rightHip ? Math.abs(leftHip.y - rightHip.y) : 0;
+  const centerDeviation =
+    shoulderCenter && hipCenter && ankleCenter
+      ? Math.abs((shoulderCenter.x + ankleCenter.x) / 2 - hipCenter.x)
+      : 0;
+  const stanceWidth = distanceBetween(leftAnkle, rightAnkle);
+
+  return {
+    eyeSpacingPercent: clampNumber((bodyHeight / shoulderWidth) * 10, 0, 100),
+    jawWidthPercent: clampNumber((1 - (shoulderTilt + hipTilt) / Math.max(torsoHeight, 1)) * 100, 0, 100),
+    midfacePercent: clampNumber((shoulderWidth / Math.max(hipWidth, 1)) * 65, 0, 100),
+    symmetryPercent: clampNumber((1 - centerDeviation / Math.max(stanceWidth || shoulderWidth, 1)) * 100, 0, 100),
   };
 }
 
@@ -3337,6 +3644,96 @@ function drawDetailScanOverlay({
 
   context.fillStyle = hexToRgba(glowColor, overlayStyle.opacity);
   for (const index of networkIndexes.slice(0, visibleDots)) {
+    const point = mappedPoints[index];
+    if (!point) {
+      continue;
+    }
+
+    context.beginPath();
+    context.arc(point.x, point.y, overlayStyle.dotSize, 0, Math.PI * 2);
+    context.fill();
+  }
+
+  context.shadowBlur = 0;
+  context.globalAlpha = 1;
+}
+
+function drawBodyScanOverlay({
+  canvas,
+  image,
+  status,
+  meshPoints,
+  progress,
+  overlayStyle,
+}: {
+  canvas: HTMLCanvasElement | null;
+  image: HTMLImageElement | null;
+  status: FaceStatus;
+  meshPoints: MeshPoint[];
+  progress: number;
+  overlayStyle: DetailOverlayStyle;
+}) {
+  if (!canvas) {
+    return;
+  }
+
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return;
+  }
+
+  const width = canvas.clientWidth;
+  const height = canvas.clientHeight;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+  context.setTransform(dpr, 0, 0, dpr, 0, 0);
+  context.clearRect(0, 0, width, height);
+
+  if (!image || !image.complete || status !== 'detected' || meshPoints.length === 0) {
+    return;
+  }
+
+  const naturalWidth = image.naturalWidth;
+  const naturalHeight = image.naturalHeight;
+  const scale = Math.max(width / naturalWidth, height / naturalHeight);
+  const drawWidth = naturalWidth * scale;
+  const drawHeight = naturalHeight * scale;
+  const offsetX = (width - drawWidth) / 2;
+  const offsetY = (height - drawHeight) / 2;
+  const mappedPoints = meshPoints.map((point) => ({
+    x: point.x * scale + offsetX,
+    y: point.y * scale + offsetY,
+  }));
+
+  const bodyKeyIndexes = [0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+  const visibleDots = Math.max(2, Math.round(progress * bodyKeyIndexes.length));
+  const visibleLines = Math.max(1, Math.round(progress * BODY_CONNECTIONS.length));
+
+  context.strokeStyle = hexToRgba(overlayStyle.color, overlayStyle.opacity);
+  context.lineWidth = overlayStyle.lineThickness;
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+  context.shadowColor = hexToRgba(overlayStyle.color, Math.min(overlayStyle.opacity * 0.72, 0.78));
+  context.shadowBlur = 12;
+  context.beginPath();
+
+  for (const [fromIndex, toIndex] of BODY_CONNECTIONS.slice(0, visibleLines)) {
+    const from = mappedPoints[fromIndex];
+    const to = mappedPoints[toIndex];
+
+    if (!from || !to) {
+      continue;
+    }
+
+    context.moveTo(from.x, from.y);
+    context.lineTo(to.x, to.y);
+  }
+
+  context.stroke();
+
+  context.fillStyle = hexToRgba(overlayStyle.color, overlayStyle.opacity);
+  for (const index of bodyKeyIndexes.slice(0, visibleDots)) {
     const point = mappedPoints[index];
     if (!point) {
       continue;
