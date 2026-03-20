@@ -28,6 +28,10 @@ type CategoryScreen =
 
 interface ScorecardState {
   image: string | null;
+  sourceImage: string | null;
+  imageOffsetX: number;
+  imageOffsetY: number;
+  imageZoom: number;
   minimalScore: number;
   minimalTier: string;
   potentialScore: number;
@@ -49,6 +53,14 @@ interface ScorecardState {
 interface DetailedBreakdownState {
   frontImage: string | null;
   sideImage: string | null;
+  frontSourceImage: string | null;
+  sideSourceImage: string | null;
+  frontImageOffsetX: number;
+  frontImageOffsetY: number;
+  sideImageOffsetX: number;
+  sideImageOffsetY: number;
+  frontImageZoom: number;
+  sideImageZoom: number;
   swapHeaderWithAvatars: boolean;
   overallScore: number;
   harmonyScore: number;
@@ -70,6 +82,10 @@ interface DetailedBreakdownState {
 
 interface AscendState {
   image: string | null;
+  sourceImage: string | null;
+  imageOffsetX: number;
+  imageOffsetY: number;
+  imageZoom: number;
   pslScore: number;
   pslTier: string;
   potentialScore: number;
@@ -86,6 +102,10 @@ interface AscendState {
 
 const INITIAL_CARD: ScorecardState = {
   image: null,
+  sourceImage: null,
+  imageOffsetX: 0,
+  imageOffsetY: 0,
+  imageZoom: 1,
   minimalScore: 5.2,
   minimalTier: 'HTN',
   potentialScore: 7.4,
@@ -109,6 +129,14 @@ const TIER_OPTIONS = ['SUB 5', 'LTN', 'MTN', 'HTN', 'CHAD LITE', 'CHAD', 'ADAM',
 const INITIAL_DETAILED_CARD: DetailedBreakdownState = {
   frontImage: null,
   sideImage: null,
+  frontSourceImage: null,
+  sideSourceImage: null,
+  frontImageOffsetX: 0,
+  frontImageOffsetY: 0,
+  sideImageOffsetX: 0,
+  sideImageOffsetY: 0,
+  frontImageZoom: 1,
+  sideImageZoom: 1,
   swapHeaderWithAvatars: false,
   overallScore: 6.4,
   harmonyScore: 7.2,
@@ -131,6 +159,14 @@ const INITIAL_DETAILED_CARD: DetailedBreakdownState = {
 const INITIAL_HEIGHT_POSTURE_CARD: DetailedBreakdownState = {
   frontImage: null,
   sideImage: null,
+  frontSourceImage: null,
+  sideSourceImage: null,
+  frontImageOffsetX: 0,
+  frontImageOffsetY: 0,
+  sideImageOffsetX: 0,
+  sideImageOffsetY: 0,
+  frontImageZoom: 1,
+  sideImageZoom: 1,
   swapHeaderWithAvatars: false,
   overallScore: 6.8,
   harmonyScore: 7.4,
@@ -152,6 +188,10 @@ const INITIAL_HEIGHT_POSTURE_CARD: DetailedBreakdownState = {
 
 const INITIAL_ASCEND_CARD: AscendState = {
   image: null,
+  sourceImage: null,
+  imageOffsetX: 0,
+  imageOffsetY: 0,
+  imageZoom: 1,
   pslScore: 6.8,
   pslTier: 'HTN',
   potentialScore: 8.1,
@@ -301,43 +341,92 @@ function App() {
 
   const handleImage = (event: ChangeEvent<HTMLInputElement>) => {
     readImageInput(event, (imageData) => {
-      setCard((current) => ({ ...current, image: imageData }));
+      setCard((current) => ({
+        ...current,
+        image: imageData,
+        sourceImage: imageData,
+        imageOffsetX: 0,
+        imageOffsetY: 0,
+        imageZoom: 1,
+      }));
     });
   };
 
   const handleDetailedFrontImage = (event: ChangeEvent<HTMLInputElement>) => {
     readImageInput(event, (imageData) => {
-      setDetailedCard((current) => ({ ...current, frontImage: imageData }));
+      setDetailedCard((current) => ({
+        ...current,
+        frontImage: imageData,
+        frontSourceImage: imageData,
+        frontImageOffsetX: 0,
+        frontImageOffsetY: 0,
+        frontImageZoom: 1,
+      }));
     });
   };
 
   const handleHeightPostureFrontImage = (event: ChangeEvent<HTMLInputElement>) => {
     readImageInput(event, (imageData) => {
-      setHeightPostureCard((current) => ({ ...current, frontImage: imageData }));
+      setHeightPostureCard((current) => ({
+        ...current,
+        frontImage: imageData,
+        frontSourceImage: imageData,
+        frontImageOffsetX: 0,
+        frontImageOffsetY: 0,
+        frontImageZoom: 1,
+      }));
     });
   };
 
   const handleAscendImage = (event: ChangeEvent<HTMLInputElement>) => {
     readImageInput(event, (imageData) => {
-      setAscendCard((current) => ({ ...current, image: imageData }));
+      setAscendCard((current) => ({
+        ...current,
+        image: imageData,
+        sourceImage: imageData,
+        imageOffsetX: 0,
+        imageOffsetY: 0,
+        imageZoom: 1,
+      }));
     });
   };
 
   const handleDetailedSideImage = (event: ChangeEvent<HTMLInputElement>) => {
     readImageInput(event, (imageData) => {
-      setDetailedCard((current) => ({ ...current, sideImage: imageData }));
+      setDetailedCard((current) => ({
+        ...current,
+        sideImage: imageData,
+        sideSourceImage: imageData,
+        sideImageOffsetX: 0,
+        sideImageOffsetY: 0,
+        sideImageZoom: 1,
+      }));
     });
   };
 
   const handleDetailed2FrontImage = (event: ChangeEvent<HTMLInputElement>) => {
     readImageInput(event, (imageData) => {
-      setDetailedCard2((current) => ({ ...current, frontImage: imageData }));
+      setDetailedCard2((current) => ({
+        ...current,
+        frontImage: imageData,
+        frontSourceImage: imageData,
+        frontImageOffsetX: 0,
+        frontImageOffsetY: 0,
+        frontImageZoom: 1,
+      }));
     });
   };
 
   const handleDetailed2SideImage = (event: ChangeEvent<HTMLInputElement>) => {
     readImageInput(event, (imageData) => {
-      setDetailedCard2((current) => ({ ...current, sideImage: imageData }));
+      setDetailedCard2((current) => ({
+        ...current,
+        sideImage: imageData,
+        sideSourceImage: imageData,
+        sideImageOffsetX: 0,
+        sideImageOffsetY: 0,
+        sideImageZoom: 1,
+      }));
     });
   };
 
@@ -717,6 +806,10 @@ function MinimalEditorScreen({
   const [animationNonce, setAnimationNonce] = useState(0);
   const [animationDurationMs, setAnimationDurationMs] = useState<AnimationDurationMs>(3000);
   const [animationProgress, setAnimationProgress] = useState(0);
+  const [draftImageOffsetX, setDraftImageOffsetX] = useState(card.imageOffsetX);
+  const [draftImageOffsetY, setDraftImageOffsetY] = useState(card.imageOffsetY);
+  const [draftImageZoom, setDraftImageZoom] = useState(card.imageZoom);
+  const [draftPreviewImage, setDraftPreviewImage] = useState<string | null>(card.image);
   const [exportFrameProgress, setExportFrameProgress] = useState<number | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportMessage, setExportMessage] = useState<string | null>(null);
@@ -731,6 +824,11 @@ function MinimalEditorScreen({
   const previewCardRef = useRef<HTMLDivElement>(null);
   const exportPreviewCardRef = useRef<HTMLDivElement>(null);
   const effectiveFaceStatus: FaceStatus = card.image ? faceStatus : 'idle';
+  const isCropDirty =
+    draftImageOffsetX !== card.imageOffsetX ||
+    draftImageOffsetY !== card.imageOffsetY ||
+    draftImageZoom !== card.imageZoom;
+  const previewImage = draftPreviewImage ?? card.image;
   const effectiveAnimationProgress = exportFrameProgress ?? animationProgress;
   const topbarReveal = easedProgress(windowedProgress(effectiveAnimationProgress, 0, 0.18));
   const avatarReveal = easedProgress(windowedProgress(effectiveAnimationProgress, 0.12, 0.35));
@@ -843,6 +941,43 @@ function MinimalEditorScreen({
   }, [card.image]);
 
   useEffect(() => {
+    setDraftImageOffsetX(card.imageOffsetX);
+    setDraftImageOffsetY(card.imageOffsetY);
+    setDraftImageZoom(card.imageZoom);
+  }, [card.imageOffsetX, card.imageOffsetY, card.imageZoom, card.sourceImage]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!card.sourceImage) {
+      setDraftPreviewImage(card.image);
+      return;
+    }
+
+    createCroppedAvatarImage({
+      source: card.sourceImage,
+      offsetX: draftImageOffsetX,
+      offsetY: draftImageOffsetY,
+      zoom: draftImageZoom,
+      size: 1400,
+    })
+      .then((croppedImage) => {
+        if (!cancelled) {
+          setDraftPreviewImage(croppedImage);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDraftPreviewImage(card.image);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [card.image, card.sourceImage, draftImageOffsetX, draftImageOffsetY, draftImageZoom]);
+
+  useEffect(() => {
     drawFaceMesh({
       canvas: meshCanvasRef.current,
       image: avatarImageRef.current,
@@ -862,7 +997,35 @@ function MinimalEditorScreen({
       meshColor: card.meshColor,
       meshOpacity: card.meshOpacity,
     });
-  }, [avatarRenderTick, card.meshColor, card.meshOpacity, effectiveFaceStatus, meshDrawProgress, meshPoints]);
+  }, [
+    avatarRenderTick,
+    card.meshColor,
+    card.meshOpacity,
+    effectiveFaceStatus,
+    meshDrawProgress,
+    meshPoints,
+  ]);
+
+  const handleRenderMesh = async () => {
+    if (!card.sourceImage) {
+      return;
+    }
+
+    const croppedImage = await createCroppedAvatarImage({
+      source: card.sourceImage,
+      offsetX: draftImageOffsetX,
+      offsetY: draftImageOffsetY,
+      zoom: draftImageZoom,
+      size: 1400,
+    });
+
+    onChange('imageOffsetX', draftImageOffsetX);
+    onChange('imageOffsetY', draftImageOffsetY);
+    onChange('imageZoom', draftImageZoom);
+    onChange('image', croppedImage);
+    setDraftPreviewImage(croppedImage);
+    setAnimationNonce((current) => current + 1);
+  };
 
   const handleExportVideo = async () => {
     if (!previewCardRef.current || isExporting) {
@@ -1259,8 +1422,89 @@ function MinimalEditorScreen({
                 step={0.01}
                 onChange={(value) => onChange('meshOpacity', value)}
               />
+              <div className="field">
+                <span className="field__label">Image Position</span>
+                <div className="control control--static">Use the crop sliders below</div>
+              </div>
             </div>
           </div>
+
+          {card.sourceImage && (
+            <div className="editor-section">
+              <div className="avatar-crop-card">
+                <div className="avatar-crop-card__header">
+                  <h2>Avatar crop</h2>
+                  <button
+                    type="button"
+                    className="control control--ghost control--ghost-small"
+                    onClick={() => {
+                      setDraftImageZoom(1);
+                      setDraftImageOffsetX(0);
+                      setDraftImageOffsetY(0);
+                    }}
+                  >
+                    Reset
+                  </button>
+                </div>
+
+                <div className="avatar-crop-card__preview">
+                  <div
+                    className="avatar-crop-card__ring"
+                    style={{
+                      background: `linear-gradient(135deg, ${card.avatarBorderStart} 0%, ${card.avatarBorderEnd} 100%)`,
+                      boxShadow: `0 0 24px ${card.avatarBorderStart}33, 0 0 36px ${card.avatarBorderEnd}1f`,
+                    }}
+                  >
+                    <div className="avatar-crop-card__avatar">
+                      <img
+                        src={previewImage ?? card.sourceImage}
+                        alt="Avatar crop preview"
+                        className="avatar-crop-card__image"
+                        draggable={false}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="avatar-crop-card__controls">
+                  <CropSlider
+                    label="Zoom"
+                    valueLabel={`${draftImageZoom.toFixed(2)}x`}
+                    value={draftImageZoom}
+                    min={1}
+                    max={3}
+                    step={0.01}
+                    onChange={setDraftImageZoom}
+                  />
+                  <CropSlider
+                    label="Horizontal"
+                    valueLabel={`${Math.round(draftImageOffsetX)}px`}
+                    value={draftImageOffsetX}
+                    min={-150}
+                    max={150}
+                    step={1}
+                    onChange={setDraftImageOffsetX}
+                  />
+                  <CropSlider
+                    label="Vertical"
+                    valueLabel={`${Math.round(draftImageOffsetY)}px`}
+                    value={draftImageOffsetY}
+                    min={-150}
+                    max={150}
+                    step={1}
+                    onChange={setDraftImageOffsetY}
+                  />
+                  <button
+                    type="button"
+                    className="preview-export"
+                    onClick={handleRenderMesh}
+                  >
+                    Render mesh
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </aside>
 
         <section className="editor-right">
@@ -1268,6 +1512,8 @@ function MinimalEditorScreen({
             <PreviewCard
               innerRef={previewCardRef}
               card={card}
+              previewImage={previewImage}
+              suppressMesh={isCropDirty}
               effectiveFaceStatus={effectiveFaceStatus}
               exportFrameProgress={exportFrameProgress}
               topbarReveal={topbarReveal}
@@ -1383,6 +1629,14 @@ function DetailedBreakdownEditorScreen({
   const [animationNonce, setAnimationNonce] = useState(0);
   const [animationDurationMs, setAnimationDurationMs] = useState<AnimationDurationMs>(3000);
   const [animationProgress, setAnimationProgress] = useState(0);
+  const [draftFrontOffsetX, setDraftFrontOffsetX] = useState(card.frontImageOffsetX);
+  const [draftFrontOffsetY, setDraftFrontOffsetY] = useState(card.frontImageOffsetY);
+  const [draftFrontZoom, setDraftFrontZoom] = useState(card.frontImageZoom);
+  const [draftSideOffsetX, setDraftSideOffsetX] = useState(card.sideImageOffsetX);
+  const [draftSideOffsetY, setDraftSideOffsetY] = useState(card.sideImageOffsetY);
+  const [draftSideZoom, setDraftSideZoom] = useState(card.sideImageZoom);
+  const [draftFrontPreviewImage, setDraftFrontPreviewImage] = useState<string | null>(card.frontImage);
+  const [draftSidePreviewImage, setDraftSidePreviewImage] = useState<string | null>(card.sideImage);
   const [exportFrameProgress, setExportFrameProgress] = useState<number | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportMessage, setExportMessage] = useState<string | null>(null);
@@ -1411,6 +1665,16 @@ function DetailedBreakdownEditorScreen({
   const exportResultsSideCanvasRef = useRef<HTMLCanvasElement>(null);
   const exportPreviewCardRef = useRef<HTMLDivElement>(null);
   const effectiveAnimationProgress = exportFrameProgress ?? animationProgress;
+  const isFrontCropDirty =
+    draftFrontOffsetX !== card.frontImageOffsetX ||
+    draftFrontOffsetY !== card.frontImageOffsetY ||
+    draftFrontZoom !== card.frontImageZoom;
+  const isSideCropDirty =
+    draftSideOffsetX !== card.sideImageOffsetX ||
+    draftSideOffsetY !== card.sideImageOffsetY ||
+    draftSideZoom !== card.sideImageZoom;
+  const frontPreviewImage = draftFrontPreviewImage ?? card.frontImage;
+  const sidePreviewImage = draftSidePreviewImage ?? card.sideImage;
   const [overallLabel, scoreLabel1, scoreLabel2, scoreLabel3, scoreLabel4, scoreLabel5, scoreLabel6] = scoreLabels;
   const featureRows = [
     [overallLabel, card.overallScore],
@@ -1470,6 +1734,74 @@ function DetailedBreakdownEditorScreen({
 
     return () => cancelAnimationFrame(frameId);
   }, [animationNonce, animationDurationMs]);
+
+  useEffect(() => {
+    setDraftFrontOffsetX(card.frontImageOffsetX);
+    setDraftFrontOffsetY(card.frontImageOffsetY);
+    setDraftFrontZoom(card.frontImageZoom);
+  }, [card.frontImageOffsetX, card.frontImageOffsetY, card.frontImageZoom, card.frontSourceImage]);
+
+  useEffect(() => {
+    setDraftSideOffsetX(card.sideImageOffsetX);
+    setDraftSideOffsetY(card.sideImageOffsetY);
+    setDraftSideZoom(card.sideImageZoom);
+  }, [card.sideImageOffsetX, card.sideImageOffsetY, card.sideImageZoom, card.sideSourceImage]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!card.frontSourceImage) {
+      setDraftFrontPreviewImage(card.frontImage);
+      return;
+    }
+
+    createCroppedAvatarImage({
+      source: card.frontSourceImage,
+      offsetX: draftFrontOffsetX,
+      offsetY: draftFrontOffsetY,
+      zoom: draftFrontZoom,
+      size: 1400,
+    }).then((cropped) => {
+      if (!cancelled) {
+        setDraftFrontPreviewImage(cropped);
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        setDraftFrontPreviewImage(card.frontImage);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [card.frontImage, card.frontSourceImage, draftFrontOffsetX, draftFrontOffsetY, draftFrontZoom]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!card.sideSourceImage) {
+      setDraftSidePreviewImage(card.sideImage);
+      return;
+    }
+
+    createCroppedAvatarImage({
+      source: card.sideSourceImage,
+      offsetX: draftSideOffsetX,
+      offsetY: draftSideOffsetY,
+      zoom: draftSideZoom,
+      size: 1400,
+    }).then((cropped) => {
+      if (!cancelled) {
+        setDraftSidePreviewImage(cropped);
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        setDraftSidePreviewImage(card.sideImage);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [card.sideImage, card.sideSourceImage, draftSideOffsetX, draftSideOffsetY, draftSideZoom]);
 
   useEffect(() => {
     let cancelled = false;
@@ -2200,12 +2532,160 @@ function DetailedBreakdownEditorScreen({
               />
             </div>
           </div>
+
+          {card.frontSourceImage && (
+            <div className="editor-section">
+              <div className="avatar-crop-card">
+                <div className="avatar-crop-card__header">
+                  <h2>Front crop</h2>
+                  <button
+                    type="button"
+                    className="control control--ghost control--ghost-small"
+                    onClick={() => {
+                      setDraftFrontZoom(1);
+                      setDraftFrontOffsetX(0);
+                      setDraftFrontOffsetY(0);
+                    }}
+                  >
+                    Reset
+                  </button>
+                </div>
+
+                <div className="avatar-crop-card__preview">
+                  <div
+                    className="avatar-crop-card__ring"
+                    style={{
+                      background: `linear-gradient(135deg, ${card.badgeBorderStart} 0%, ${card.badgeBorderEnd} 100%)`,
+                      boxShadow: `0 0 24px ${card.badgeBorderStart}33, 0 0 36px ${card.badgeBorderEnd}1f`,
+                    }}
+                  >
+                    <div className="avatar-crop-card__avatar">
+                      <img
+                        src={frontPreviewImage ?? card.frontSourceImage}
+                        alt="Front crop preview"
+                        className="avatar-crop-card__image"
+                        draggable={false}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="avatar-crop-card__controls">
+                  <CropSlider label="Zoom" valueLabel={`${draftFrontZoom.toFixed(2)}x`} value={draftFrontZoom} min={1} max={3} step={0.01} onChange={setDraftFrontZoom} />
+                  <CropSlider label="Horizontal" valueLabel={`${Math.round(draftFrontOffsetX)}px`} value={draftFrontOffsetX} min={-150} max={150} step={1} onChange={setDraftFrontOffsetX} />
+                  <CropSlider label="Vertical" valueLabel={`${Math.round(draftFrontOffsetY)}px`} value={draftFrontOffsetY} min={-150} max={150} step={1} onChange={setDraftFrontOffsetY} />
+                  <button
+                    type="button"
+                    className="preview-export"
+                    onClick={async () => {
+                      if (!card.frontSourceImage) {
+                        return;
+                      }
+
+                      const croppedImage = await createCroppedAvatarImage({
+                        source: card.frontSourceImage,
+                        offsetX: draftFrontOffsetX,
+                        offsetY: draftFrontOffsetY,
+                        zoom: draftFrontZoom,
+                        size: 1400,
+                      });
+
+                      onChange('frontImageOffsetX', draftFrontOffsetX);
+                      onChange('frontImageOffsetY', draftFrontOffsetY);
+                      onChange('frontImageZoom', draftFrontZoom);
+                      onChange('frontImage', croppedImage);
+                      setDraftFrontPreviewImage(croppedImage);
+                      setAnimationNonce((current) => current + 1);
+                    }}
+                  >
+                    Render landmarks
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {enableSideAvatar && card.sideSourceImage && (
+            <div className="editor-section">
+              <div className="avatar-crop-card">
+                <div className="avatar-crop-card__header">
+                  <h2>Side crop</h2>
+                  <button
+                    type="button"
+                    className="control control--ghost control--ghost-small"
+                    onClick={() => {
+                      setDraftSideZoom(1);
+                      setDraftSideOffsetX(0);
+                      setDraftSideOffsetY(0);
+                    }}
+                  >
+                    Reset
+                  </button>
+                </div>
+
+                <div className="avatar-crop-card__preview">
+                  <div
+                    className="avatar-crop-card__ring"
+                    style={{
+                      background: `linear-gradient(135deg, ${card.badgeBorderStart} 0%, ${card.badgeBorderEnd} 100%)`,
+                      boxShadow: `0 0 24px ${card.badgeBorderStart}33, 0 0 36px ${card.badgeBorderEnd}1f`,
+                    }}
+                  >
+                    <div className="avatar-crop-card__avatar">
+                      <img
+                        src={sidePreviewImage ?? card.sideSourceImage}
+                        alt="Side crop preview"
+                        className="avatar-crop-card__image"
+                        draggable={false}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="avatar-crop-card__controls">
+                  <CropSlider label="Zoom" valueLabel={`${draftSideZoom.toFixed(2)}x`} value={draftSideZoom} min={1} max={3} step={0.01} onChange={setDraftSideZoom} />
+                  <CropSlider label="Horizontal" valueLabel={`${Math.round(draftSideOffsetX)}px`} value={draftSideOffsetX} min={-150} max={150} step={1} onChange={setDraftSideOffsetX} />
+                  <CropSlider label="Vertical" valueLabel={`${Math.round(draftSideOffsetY)}px`} value={draftSideOffsetY} min={-150} max={150} step={1} onChange={setDraftSideOffsetY} />
+                  <button
+                    type="button"
+                    className="preview-export"
+                    onClick={async () => {
+                      if (!card.sideSourceImage) {
+                        return;
+                      }
+
+                      const croppedImage = await createCroppedAvatarImage({
+                        source: card.sideSourceImage,
+                        offsetX: draftSideOffsetX,
+                        offsetY: draftSideOffsetY,
+                        zoom: draftSideZoom,
+                        size: 1400,
+                      });
+
+                      onChange('sideImageOffsetX', draftSideOffsetX);
+                      onChange('sideImageOffsetY', draftSideOffsetY);
+                      onChange('sideImageZoom', draftSideZoom);
+                      onChange('sideImage', croppedImage);
+                      setDraftSidePreviewImage(croppedImage);
+                      setAnimationNonce((current) => current + 1);
+                    }}
+                  >
+                    Render landmarks
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </aside>
 
         <section className="editor-right">
           <div className="portrait-stage">
             <DetailedPreviewCard
               card={card}
+              frontPreviewImage={frontPreviewImage}
+              sidePreviewImage={sidePreviewImage}
+              suppressFrontOverlay={isFrontCropDirty}
+              suppressSideOverlay={isSideCropDirty}
               activeScanLabel={activeScanLabel}
               analysisReveal={analysisReveal}
               analysisFade={analysisFade}
@@ -2264,6 +2744,8 @@ function DetailedBreakdownEditorScreen({
                 innerRef={exportPreviewCardRef}
                 className="portrait-card--capture"
                 card={card}
+                frontPreviewImage={frontPreviewImage}
+                sidePreviewImage={sidePreviewImage}
                 activeScanLabel={activeScanLabel}
                 analysisReveal={analysisReveal}
                 analysisFade={analysisFade}
@@ -2297,6 +2779,10 @@ function DetailedPreviewCard({
   innerRef,
   className,
   card,
+  frontPreviewImage,
+  sidePreviewImage,
+  suppressFrontOverlay,
+  suppressSideOverlay,
   activeScanLabel,
   analysisReveal,
   analysisFade,
@@ -2323,6 +2809,10 @@ function DetailedPreviewCard({
   innerRef?: React.RefObject<HTMLDivElement | null>;
   className?: string;
   card: DetailedBreakdownState;
+  frontPreviewImage?: string | null;
+  sidePreviewImage?: string | null;
+  suppressFrontOverlay?: boolean;
+  suppressSideOverlay?: boolean;
   activeScanLabel: string;
   analysisReveal: number;
   analysisFade: number;
@@ -2405,23 +2895,25 @@ function DetailedPreviewCard({
               className={`portrait-shot portrait-shot--hero ${avatarShape === 'rectangle' ? 'portrait-shot--hero-rect' : ''} ${enableSideAvatar ? 'portrait-shot--dual' : ''}`.trim()}
               onClick={onOpenFrontPicker}
             >
-              {card.frontImage ? (
+              {(frontPreviewImage ?? card.frontImage) ? (
                 <>
-                  <img
-                    ref={heroImageRef}
-                    src={card.frontImage}
-                    alt="Front profile preview"
-                    className="portrait-shot__image"
-                    onLoad={onImageLoad}
-                    loading="eager"
-                    decoding="sync"
+                <img
+                  ref={heroImageRef}
+                  src={frontPreviewImage ?? card.frontImage ?? undefined}
+                  alt="Front profile preview"
+                  className="portrait-shot__image"
+                  onLoad={onImageLoad}
+                  loading="eager"
+                  decoding="sync"
                     fetchPriority="high"
                   />
-                  <canvas
-                    ref={heroCanvasRef}
-                    className="portrait-shot__overlay"
-                    aria-hidden="true"
-                  />
+                  {!suppressFrontOverlay && (
+                    <canvas
+                      ref={heroCanvasRef}
+                      className="portrait-shot__overlay"
+                      aria-hidden="true"
+                    />
+                  )}
                 </>
               ) : (
                 <>
@@ -2446,11 +2938,11 @@ function DetailedPreviewCard({
                 className="portrait-shot portrait-shot--hero portrait-shot--dual portrait-shot--side"
                 onClick={onOpenSidePicker}
               >
-                {card.sideImage ? (
+                {(sidePreviewImage ?? card.sideImage) ? (
                   <>
                     <img
                       ref={heroSideImageRef}
-                      src={card.sideImage}
+                      src={sidePreviewImage ?? card.sideImage ?? undefined}
                       alt="Side profile preview"
                       className="portrait-shot__image"
                       onLoad={onImageLoad}
@@ -2458,11 +2950,13 @@ function DetailedPreviewCard({
                       decoding="sync"
                       fetchPriority="high"
                     />
-                    <canvas
-                      ref={heroSideCanvasRef}
-                      className="portrait-shot__overlay"
-                      aria-hidden="true"
-                    />
+                    {!suppressSideOverlay && (
+                      <canvas
+                        ref={heroSideCanvasRef}
+                        className="portrait-shot__overlay"
+                        aria-hidden="true"
+                      />
+                    )}
                   </>
                 ) : (
                   <>
@@ -2499,11 +2993,11 @@ function DetailedPreviewCard({
         >
           <div className={`portrait-results-avatar-stack ${enableSideAvatar ? 'portrait-results-avatar-stack--dual' : ''}`.trim()}>
             <div className={`portrait-results-avatar ${avatarShape === 'rectangle' ? 'portrait-results-avatar--rect' : ''} ${enableSideAvatar ? 'portrait-results-avatar--dual' : ''}`.trim()}>
-              {card.frontImage ? (
+              {(frontPreviewImage ?? card.frontImage) ? (
                 <>
                   <img
                     ref={resultsImageRef}
-                    src={card.frontImage}
+                    src={frontPreviewImage ?? card.frontImage ?? undefined}
                     alt="Detailed breakdown avatar"
                     className="portrait-results-avatar__image"
                     onLoad={onImageLoad}
@@ -2511,11 +3005,13 @@ function DetailedPreviewCard({
                     decoding="sync"
                     fetchPriority="high"
                   />
-                  <canvas
-                    ref={resultsCanvasRef}
-                    className="portrait-results-avatar__overlay"
-                    aria-hidden="true"
-                  />
+                  {!suppressFrontOverlay && (
+                    <canvas
+                      ref={resultsCanvasRef}
+                      className="portrait-results-avatar__overlay"
+                      aria-hidden="true"
+                    />
+                  )}
                 </>
               ) : (
                 <>
@@ -2537,11 +3033,11 @@ function DetailedPreviewCard({
 
             {enableSideAvatar && (
               <div className="portrait-results-avatar portrait-results-avatar--dual portrait-results-avatar--side">
-                {card.sideImage ? (
+                {(sidePreviewImage ?? card.sideImage) ? (
                   <>
                     <img
                       ref={resultsSideImageRef}
-                      src={card.sideImage}
+                      src={sidePreviewImage ?? card.sideImage ?? undefined}
                       alt="Detailed breakdown side avatar"
                       className="portrait-results-avatar__image"
                       onLoad={onImageLoad}
@@ -2549,11 +3045,13 @@ function DetailedPreviewCard({
                       decoding="sync"
                       fetchPriority="high"
                     />
-                    <canvas
-                      ref={resultsSideCanvasRef}
-                      className="portrait-results-avatar__overlay"
-                      aria-hidden="true"
-                    />
+                    {!suppressSideOverlay && (
+                      <canvas
+                        ref={resultsSideCanvasRef}
+                        className="portrait-results-avatar__overlay"
+                        aria-hidden="true"
+                      />
+                    )}
                   </>
                 ) : (
                   <>
@@ -2617,6 +3115,10 @@ function AscendEditorScreen({
 }) {
   const [animationNonce, setAnimationNonce] = useState(0);
   const [animationDurationMs, setAnimationDurationMs] = useState<AnimationDurationMs>(1500);
+  const [draftImageOffsetX, setDraftImageOffsetX] = useState(card.imageOffsetX);
+  const [draftImageOffsetY, setDraftImageOffsetY] = useState(card.imageOffsetY);
+  const [draftImageZoom, setDraftImageZoom] = useState(card.imageZoom);
+  const [draftPreviewImage, setDraftPreviewImage] = useState<string | null>(card.image);
   const [faceStatus, setFaceStatus] = useState<FaceStatus>('idle');
   const [meshPoints, setMeshPoints] = useState<MeshPoint[]>([]);
   const [avatarRenderTick, setAvatarRenderTick] = useState(0);
@@ -2631,6 +3133,11 @@ function AscendEditorScreen({
   const exportMeshCanvasRef = useRef<HTMLCanvasElement>(null);
   const exportPreviewCardRef = useRef<HTMLDivElement>(null);
   const effectiveAnimationProgress = exportFrameProgress ?? animationProgress;
+  const isCropDirty =
+    draftImageOffsetX !== card.imageOffsetX ||
+    draftImageOffsetY !== card.imageOffsetY ||
+    draftImageZoom !== card.imageZoom;
+  const previewImage = draftPreviewImage ?? card.image;
   const topbarReveal = easedProgress(windowedProgress(effectiveAnimationProgress, 0, 0.16));
   const avatarReveal = easedProgress(windowedProgress(effectiveAnimationProgress, 0.1, 0.34));
   const primaryReveal = easedProgress(windowedProgress(effectiveAnimationProgress, 0.24, 0.5));
@@ -2667,6 +3174,40 @@ function AscendEditorScreen({
 
     return () => cancelAnimationFrame(frameId);
   }, [animationDurationMs, animationNonce]);
+
+  useEffect(() => {
+    setDraftImageOffsetX(card.imageOffsetX);
+    setDraftImageOffsetY(card.imageOffsetY);
+    setDraftImageZoom(card.imageZoom);
+  }, [card.imageOffsetX, card.imageOffsetY, card.imageZoom, card.sourceImage]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!card.sourceImage) {
+      setDraftPreviewImage(card.image);
+      return;
+    }
+
+    createCroppedAvatarImage({
+      source: card.sourceImage,
+      offsetX: draftImageOffsetX,
+      offsetY: draftImageOffsetY,
+      zoom: draftImageZoom,
+      size: 1400,
+    }).then((cropped) => {
+      if (!cancelled) {
+        setDraftPreviewImage(cropped);
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        setDraftPreviewImage(card.image);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [card.image, card.sourceImage, draftImageOffsetX, draftImageOffsetY, draftImageZoom]);
 
   useEffect(() => {
     let cancelled = false;
@@ -2765,6 +3306,27 @@ function AscendEditorScreen({
     meshDrawProgress,
     meshPoints,
   ]);
+
+  const handleRenderMesh = async () => {
+    if (!card.sourceImage) {
+      return;
+    }
+
+    const croppedImage = await createCroppedAvatarImage({
+      source: card.sourceImage,
+      offsetX: draftImageOffsetX,
+      offsetY: draftImageOffsetY,
+      zoom: draftImageZoom,
+      size: 1400,
+    });
+
+    onChange('imageOffsetX', draftImageOffsetX);
+    onChange('imageOffsetY', draftImageOffsetY);
+    onChange('imageZoom', draftImageZoom);
+    onChange('image', croppedImage);
+    setDraftPreviewImage(croppedImage);
+    setAnimationNonce((current) => current + 1);
+  };
 
   const handleExportVideo = async () => {
     if (isExporting) {
@@ -3128,12 +3690,63 @@ function AscendEditorScreen({
               />
             </div>
           </div>
+
+          {card.sourceImage && (
+            <div className="editor-section">
+              <div className="avatar-crop-card">
+                <div className="avatar-crop-card__header">
+                  <h2>Avatar crop</h2>
+                  <button
+                    type="button"
+                    className="control control--ghost control--ghost-small"
+                    onClick={() => {
+                      setDraftImageZoom(1);
+                      setDraftImageOffsetX(0);
+                      setDraftImageOffsetY(0);
+                    }}
+                  >
+                    Reset
+                  </button>
+                </div>
+
+                <div className="avatar-crop-card__preview">
+                  <div
+                    className="avatar-crop-card__ring"
+                    style={{
+                      background: `linear-gradient(135deg, ${card.avatarBorderStart} 0%, ${card.avatarBorderEnd} 100%)`,
+                      boxShadow: `0 0 24px ${card.avatarBorderStart}33, 0 0 36px ${card.avatarBorderEnd}1f`,
+                    }}
+                  >
+                    <div className="avatar-crop-card__avatar">
+                      <img
+                        src={previewImage ?? card.sourceImage}
+                        alt="Ascend crop preview"
+                        className="avatar-crop-card__image"
+                        draggable={false}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="avatar-crop-card__controls">
+                  <CropSlider label="Zoom" valueLabel={`${draftImageZoom.toFixed(2)}x`} value={draftImageZoom} min={1} max={3} step={0.01} onChange={setDraftImageZoom} />
+                  <CropSlider label="Horizontal" valueLabel={`${Math.round(draftImageOffsetX)}px`} value={draftImageOffsetX} min={-150} max={150} step={1} onChange={setDraftImageOffsetX} />
+                  <CropSlider label="Vertical" valueLabel={`${Math.round(draftImageOffsetY)}px`} value={draftImageOffsetY} min={-150} max={150} step={1} onChange={setDraftImageOffsetY} />
+                  <button type="button" className="preview-export" onClick={handleRenderMesh}>
+                    Render mesh
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </aside>
 
         <section className="editor-right">
           <div className="portrait-stage">
             <AscendPreviewCard
               card={card}
+              previewImage={previewImage}
+              suppressMesh={isCropDirty}
               topbarReveal={topbarReveal}
               avatarReveal={avatarReveal}
               primaryReveal={primaryReveal}
@@ -3188,6 +3801,7 @@ function AscendEditorScreen({
                 innerRef={exportPreviewCardRef}
                 className="ascend-card--capture"
                 card={card}
+                previewImage={previewImage}
                 topbarReveal={topbarReveal}
                 avatarReveal={avatarReveal}
                 primaryReveal={primaryReveal}
@@ -3217,6 +3831,8 @@ function AscendPreviewCard({
   innerRef,
   className,
   card,
+  previewImage,
+  suppressMesh,
   topbarReveal,
   avatarReveal,
   primaryReveal,
@@ -3239,6 +3855,8 @@ function AscendPreviewCard({
   innerRef?: React.RefObject<HTMLDivElement | null>;
   className?: string;
   card: AscendState;
+  previewImage?: string | null;
+  suppressMesh?: boolean;
   topbarReveal: number;
   avatarReveal: number;
   primaryReveal: number;
@@ -3302,11 +3920,11 @@ function AscendPreviewCard({
 
       <div className="ascend-hero-wrap" style={getRevealStyle(avatarReveal, 12, 0.94)}>
         <button className="ascend-hero" onClick={onOpenPicker}>
-          {card.image ? (
+          {(previewImage ?? card.image) ? (
             <>
               <img
                 ref={heroImageRef}
-                src={card.image}
+                src={previewImage ?? card.image ?? undefined}
                 alt="Ascend preview"
                 className="ascend-hero__image"
                 onLoad={onHeroLoad}
@@ -3314,7 +3932,7 @@ function AscendPreviewCard({
                 decoding="sync"
                 fetchPriority="high"
               />
-              {effectiveFaceStatus === 'detected' && (
+              {effectiveFaceStatus === 'detected' && !suppressMesh && (
                 <canvas
                   ref={meshCanvasRef}
                   className="ascend-hero__mesh"
@@ -3417,6 +4035,8 @@ function PreviewCard({
   innerRef,
   className,
   card,
+  previewImage,
+  suppressMesh,
   effectiveFaceStatus,
   exportFrameProgress,
   topbarReveal,
@@ -3437,6 +4057,8 @@ function PreviewCard({
   innerRef?: React.RefObject<HTMLDivElement | null>;
   className?: string;
   card: ScorecardState;
+  previewImage?: string | null;
+  suppressMesh?: boolean;
   effectiveFaceStatus: FaceStatus;
   exportFrameProgress: number | null;
   topbarReveal: number;
@@ -3498,25 +4120,27 @@ function PreviewCard({
           }}
         >
           <button className="preview-avatar" onClick={onOpenPicker}>
-            {card.image ? (
+            {(previewImage ?? card.image) ? (
               <>
+                <div className="preview-avatar__content">
                 <img
                   ref={avatarImageRef}
-                  src={card.image}
+                  src={previewImage ?? card.image ?? undefined}
                   alt="Avatar preview"
                   className="preview-avatar__image"
                   onLoad={onAvatarLoad}
                   loading="eager"
                   decoding="sync"
-                  fetchPriority="high"
-                />
-                {effectiveFaceStatus === 'detected' && (
-                  <canvas
-                    ref={meshCanvasRef}
-                    className="preview-avatar__mesh"
-                    aria-hidden="true"
+                    fetchPriority="high"
                   />
-                )}
+                  {effectiveFaceStatus === 'detected' && !suppressMesh && (
+                    <canvas
+                      ref={meshCanvasRef}
+                      className="preview-avatar__mesh"
+                      aria-hidden="true"
+                    />
+                  )}
+                </div>
               </>
             ) : (
               <>
@@ -3809,6 +4433,9 @@ function drawFaceMesh({
   meshDrawProgress,
   meshColor,
   meshOpacity,
+  imageOffsetX = 0,
+  imageOffsetY = 0,
+  imageZoom = 1,
 }: {
   canvas: HTMLCanvasElement | null;
   image: HTMLImageElement | null;
@@ -3817,6 +4444,9 @@ function drawFaceMesh({
   meshDrawProgress: number;
   meshColor: string;
   meshOpacity?: number;
+  imageOffsetX?: number;
+  imageOffsetY?: number;
+  imageZoom?: number;
 }) {
   if (!canvas) {
     return;
@@ -3827,24 +4457,27 @@ function drawFaceMesh({
     return;
   }
 
-  const size = canvas.clientWidth;
+  const width = canvas.clientWidth;
+  const height = canvas.clientHeight;
   const dpr = window.devicePixelRatio || 1;
-  canvas.width = size * dpr;
-  canvas.height = size * dpr;
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
   context.setTransform(dpr, 0, 0, dpr, 0, 0);
-  context.clearRect(0, 0, size, size);
+  context.clearRect(0, 0, width, height);
 
   if (!image || !image.complete || status !== 'detected' || meshPoints.length === 0) {
     return;
   }
 
-  const naturalWidth = image.naturalWidth;
-  const naturalHeight = image.naturalHeight;
-  const scale = Math.max(size / naturalWidth, size / naturalHeight);
-  const drawWidth = naturalWidth * scale;
-  const drawHeight = naturalHeight * scale;
-  const offsetX = (size - drawWidth) / 2;
-  const offsetY = (size - drawHeight) / 2;
+  const { scale, offsetX, offsetY } = calculateCoverPlacement({
+    frameWidth: width,
+    frameHeight: height,
+    sourceWidth: image.naturalWidth,
+    sourceHeight: image.naturalHeight,
+    imageOffsetX,
+    imageOffsetY,
+    imageZoom,
+  });
 
   context.beginPath();
   const strokeOpacity = clampNumber(meshOpacity ?? 0.42, 0, 1);
@@ -4362,6 +4995,128 @@ function hexToRgba(hex: string, alpha: number) {
   const blue = Number.parseInt(expanded.slice(4, 6), 16);
 
   return `rgba(${red}, ${green}, ${blue}, ${safeAlpha})`;
+}
+
+function calculateCoverPlacement({
+  frameWidth,
+  frameHeight,
+  sourceWidth,
+  sourceHeight,
+  imageOffsetX = 0,
+  imageOffsetY = 0,
+  imageZoom = 1,
+}: {
+  frameWidth: number;
+  frameHeight: number;
+  sourceWidth: number;
+  sourceHeight: number;
+  imageOffsetX?: number;
+  imageOffsetY?: number;
+  imageZoom?: number;
+}) {
+  const safeSourceWidth = Math.max(sourceWidth, 1);
+  const safeSourceHeight = Math.max(sourceHeight, 1);
+  const scale = Math.max(frameWidth / safeSourceWidth, frameHeight / safeSourceHeight);
+  const drawWidth = safeSourceWidth * scale;
+  const drawHeight = safeSourceHeight * scale;
+  const anchorX = (50 + imageOffsetX) / 100;
+  const anchorY = (50 + imageOffsetY) / 100;
+  const zoom = Math.max(imageZoom, 1);
+  const zoomedWidth = drawWidth * zoom;
+  const zoomedHeight = drawHeight * zoom;
+  const baseOffsetX = (frameWidth - drawWidth) * anchorX;
+  const baseOffsetY = (frameHeight - drawHeight) * anchorY;
+
+  return {
+    scale: scale * zoom,
+    drawWidth: zoomedWidth,
+    drawHeight: zoomedHeight,
+    offsetX: baseOffsetX - (zoomedWidth - drawWidth) / 2,
+    offsetY: baseOffsetY - (zoomedHeight - drawHeight) / 2,
+  };
+}
+
+async function createCroppedAvatarImage({
+  source,
+  offsetX,
+  offsetY,
+  zoom,
+  size,
+}: {
+  source: string;
+  offsetX: number;
+  offsetY: number;
+  zoom: number;
+  size: number;
+}) {
+  const image = await loadImageElement(source);
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const context = canvas.getContext('2d');
+  if (!context) {
+    throw new Error('Could not create image crop.');
+  }
+
+  const placement = calculateCoverPlacement({
+    frameWidth: size,
+    frameHeight: size,
+    sourceWidth: image.naturalWidth,
+    sourceHeight: image.naturalHeight,
+    imageOffsetX: offsetX,
+    imageOffsetY: offsetY,
+    imageZoom: zoom,
+  });
+
+  context.clearRect(0, 0, size, size);
+  context.drawImage(image, placement.offsetX, placement.offsetY, placement.drawWidth, placement.drawHeight);
+  return canvas.toDataURL('image/png');
+}
+
+async function loadImageElement(source: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.crossOrigin = 'anonymous';
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('Could not load image.'));
+    image.src = source;
+  });
+}
+
+function CropSlider({
+  label,
+  valueLabel,
+  value,
+  min,
+  max,
+  step,
+  onChange,
+}: {
+  label: string;
+  valueLabel: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <label className="crop-slider">
+      <div className="crop-slider__row">
+        <span>{label}</span>
+        <strong>{valueLabel}</strong>
+      </div>
+      <input
+        className="crop-slider__input"
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+      />
+    </label>
+  );
 }
 
 function wait(ms: number) {
