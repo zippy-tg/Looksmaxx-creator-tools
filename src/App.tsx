@@ -16,9 +16,15 @@ type Screen =
   | 'category-intro'
   | 'minimal-rating-potential'
   | 'detailed-breakdown'
+  | 'detailed-breakdown-2'
   | 'ascend'
   | 'height-posture-detailed';
-type CategoryScreen = 'minimal-rating-potential' | 'detailed-breakdown' | 'ascend' | 'height-posture-detailed';
+type CategoryScreen =
+  | 'minimal-rating-potential'
+  | 'detailed-breakdown'
+  | 'detailed-breakdown-2'
+  | 'ascend'
+  | 'height-posture-detailed';
 
 interface ScorecardState {
   image: string | null;
@@ -43,6 +49,7 @@ interface ScorecardState {
 interface DetailedBreakdownState {
   frontImage: string | null;
   sideImage: string | null;
+  swapHeaderWithAvatars: boolean;
   overallScore: number;
   harmonyScore: number;
   angularityScore: number;
@@ -102,6 +109,7 @@ const TIER_OPTIONS = ['SUB 5', 'LTN', 'MTN', 'HTN', 'CHAD LITE', 'CHAD', 'ADAM',
 const INITIAL_DETAILED_CARD: DetailedBreakdownState = {
   frontImage: null,
   sideImage: null,
+  swapHeaderWithAvatars: false,
   overallScore: 6.4,
   harmonyScore: 7.2,
   angularityScore: 5.4,
@@ -123,6 +131,7 @@ const INITIAL_DETAILED_CARD: DetailedBreakdownState = {
 const INITIAL_HEIGHT_POSTURE_CARD: DetailedBreakdownState = {
   frontImage: null,
   sideImage: null,
+  swapHeaderWithAvatars: false,
   overallScore: 6.8,
   harmonyScore: 7.4,
   angularityScore: 6.9,
@@ -262,10 +271,14 @@ function App() {
   const [pendingCategory, setPendingCategory] = useState<CategoryScreen | null>(null);
   const [card, setCard] = useState<ScorecardState>(INITIAL_CARD);
   const [detailedCard, setDetailedCard] = useState<DetailedBreakdownState>(INITIAL_DETAILED_CARD);
+  const [detailedCard2, setDetailedCard2] = useState<DetailedBreakdownState>(INITIAL_DETAILED_CARD);
   const [heightPostureCard, setHeightPostureCard] = useState<DetailedBreakdownState>(INITIAL_HEIGHT_POSTURE_CARD);
   const [ascendCard, setAscendCard] = useState<AscendState>(INITIAL_ASCEND_CARD);
   const fileRef = useRef<HTMLInputElement>(null);
   const detailedFrontFileRef = useRef<HTMLInputElement>(null);
+  const detailedSideFileRef = useRef<HTMLInputElement>(null);
+  const detailed2FrontFileRef = useRef<HTMLInputElement>(null);
+  const detailed2SideFileRef = useRef<HTMLInputElement>(null);
   const ascendFileRef = useRef<HTMLInputElement>(null);
 
   const readImageInput = (
@@ -310,11 +323,36 @@ function App() {
     });
   };
 
+  const handleDetailedSideImage = (event: ChangeEvent<HTMLInputElement>) => {
+    readImageInput(event, (imageData) => {
+      setDetailedCard((current) => ({ ...current, sideImage: imageData }));
+    });
+  };
+
+  const handleDetailed2FrontImage = (event: ChangeEvent<HTMLInputElement>) => {
+    readImageInput(event, (imageData) => {
+      setDetailedCard2((current) => ({ ...current, frontImage: imageData }));
+    });
+  };
+
+  const handleDetailed2SideImage = (event: ChangeEvent<HTMLInputElement>) => {
+    readImageInput(event, (imageData) => {
+      setDetailedCard2((current) => ({ ...current, sideImage: imageData }));
+    });
+  };
+
   const setDetailedField = <K extends keyof DetailedBreakdownState>(
     field: K,
     value: DetailedBreakdownState[K],
   ) => {
     setDetailedCard((current) => ({ ...current, [field]: value }));
+  };
+
+  const setDetailed2Field = <K extends keyof DetailedBreakdownState>(
+    field: K,
+    value: DetailedBreakdownState[K],
+  ) => {
+    setDetailedCard2((current) => ({ ...current, [field]: value }));
   };
 
   const setHeightPostureField = <K extends keyof DetailedBreakdownState>(
@@ -353,6 +391,7 @@ function App() {
           onBack={() => setScreen('home')}
           onOpenMinimal={() => openCategory('minimal-rating-potential')}
           onOpenDetailed={() => openCategory('detailed-breakdown')}
+          onOpenDetailed2={() => openCategory('detailed-breakdown-2')}
           onOpenAscend={() => openCategory('ascend')}
         />
       )}
@@ -380,10 +419,32 @@ function App() {
         <DetailedBreakdownEditorScreen
           card={detailedCard}
           frontFileRef={detailedFrontFileRef}
+          sideFileRef={detailedSideFileRef}
           onBack={() => setScreen('face-analysis')}
           onOpenFrontPicker={() => detailedFrontFileRef.current?.click()}
+          onOpenSidePicker={() => detailedSideFileRef.current?.click()}
           onFrontImageChange={handleDetailedFrontImage}
+          onSideImageChange={handleDetailedSideImage}
           onChange={setDetailedField}
+        />
+      )}
+
+      {screen === 'detailed-breakdown-2' && (
+        <DetailedBreakdownEditorScreen
+          card={detailedCard2}
+          frontFileRef={detailed2FrontFileRef}
+          sideFileRef={detailed2SideFileRef}
+          onBack={() => setScreen('face-analysis')}
+          onOpenFrontPicker={() => detailed2FrontFileRef.current?.click()}
+          onOpenSidePicker={() => detailed2SideFileRef.current?.click()}
+          onFrontImageChange={handleDetailed2FrontImage}
+          onSideImageChange={handleDetailed2SideImage}
+          onChange={setDetailed2Field}
+          title="Detailed Breakdown 2.0"
+          description="Build the 9:16 dual-angle breakdown card for creator edits."
+          templateLabel="Detailed 2.0"
+          enableSideAvatar
+          exportBaseName="omnimaxx-detailed-breakdown-2"
         />
       )}
 
@@ -486,11 +547,13 @@ function FaceAnalysisScreen({
   onBack,
   onOpenMinimal,
   onOpenDetailed,
+  onOpenDetailed2,
   onOpenAscend,
 }: {
   onBack: () => void;
   onOpenMinimal: () => void;
   onOpenDetailed: () => void;
+  onOpenDetailed2: () => void;
   onOpenAscend: () => void;
 }) {
   return (
@@ -510,7 +573,10 @@ function FaceAnalysisScreen({
           <div className="category-card__copy">
             <h2>Minimal Rating & Potential</h2>
             <p>Clean two-box layout for creator edits</p>
-            <span className="category-card__meta">Photo + video</span>
+            <div className="category-card__badges">
+              <span className="category-card__meta">Photo + video</span>
+              <span className="category-card__tag">Classic</span>
+            </div>
           </div>
           <ChevronRight size={18} />
         </button>
@@ -519,7 +585,22 @@ function FaceAnalysisScreen({
           <div className="category-card__copy">
             <h2>Detailed Breakdown</h2>
             <p>Portrait analysis layout for vertical creator edits</p>
-            <span className="category-card__meta">Photo + video</span>
+            <div className="category-card__badges">
+              <span className="category-card__meta">Photo + video</span>
+              <span className="category-card__tag">Cinematic</span>
+            </div>
+          </div>
+          <ChevronRight size={18} />
+        </button>
+
+        <button className="category-card category-card--active" onClick={onOpenDetailed2}>
+          <div className="category-card__copy">
+            <h2>Detailed Breakdown 2.0</h2>
+            <p>Same detailed layout with front and side avatars</p>
+            <div className="category-card__badges">
+              <span className="category-card__meta">Photo + video</span>
+              <span className="category-card__tag category-card__tag--warn">Buggy - trying to make it work</span>
+            </div>
           </div>
           <ChevronRight size={18} />
         </button>
@@ -551,6 +632,8 @@ function CategoryIntroScreen({
       ? 'Minimal Rating & Potential'
       : category === 'detailed-breakdown'
         ? 'Detailed Breakdown'
+        : category === 'detailed-breakdown-2'
+          ? 'Detailed Breakdown 2.0'
         : category === 'ascend'
           ? 'ASCEND'
           : 'Detailed Height/Posture Analysis';
@@ -1057,6 +1140,7 @@ function MinimalEditorScreen({
                 <option value={3000}>3 sec</option>
               </select>
             </Field>
+
           </div>
 
           <div className="editor-section">
@@ -1262,9 +1346,12 @@ function MinimalEditorScreen({
 function DetailedBreakdownEditorScreen({
   card,
   frontFileRef,
+  sideFileRef,
   onBack,
   onOpenFrontPicker,
+  onOpenSidePicker,
   onFrontImageChange,
+  onSideImageChange,
   onChange,
   title = 'Detailed Breakdown',
   description = 'Build the vertical 9:16 breakdown card for creator edits.',
@@ -1272,12 +1359,17 @@ function DetailedBreakdownEditorScreen({
   scoreLabels = ['Overall', 'Harmony', 'Structure', 'Presence', 'Features', 'Symmetry', 'Proportions'],
   scanLabelsDetected,
   detectionMode = 'face',
+  enableSideAvatar = false,
+  exportBaseName = 'omnimaxx-detailed-breakdown',
 }: {
   card: DetailedBreakdownState;
   frontFileRef: React.RefObject<HTMLInputElement | null>;
+  sideFileRef?: React.RefObject<HTMLInputElement | null>;
   onBack: () => void;
   onOpenFrontPicker: () => void;
+  onOpenSidePicker?: () => void;
   onFrontImageChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onSideImageChange?: (event: ChangeEvent<HTMLInputElement>) => void;
   onChange: <K extends keyof DetailedBreakdownState>(field: K, value: DetailedBreakdownState[K]) => void;
   title?: string;
   description?: string;
@@ -1285,6 +1377,8 @@ function DetailedBreakdownEditorScreen({
   scoreLabels?: readonly [string, string, string, string, string, string, string];
   scanLabelsDetected?: readonly [string, string, string, string, string];
   detectionMode?: DetectionMode;
+  enableSideAvatar?: boolean;
+  exportBaseName?: string;
 }) {
   const [animationNonce, setAnimationNonce] = useState(0);
   const [animationDurationMs, setAnimationDurationMs] = useState<AnimationDurationMs>(3000);
@@ -1293,18 +1387,28 @@ function DetailedBreakdownEditorScreen({
   const [isExporting, setIsExporting] = useState(false);
   const [exportMessage, setExportMessage] = useState<string | null>(null);
   const [exportProgress, setExportProgress] = useState<number | null>(null);
-  const [faceStatus, setFaceStatus] = useState<FaceStatus>('idle');
-  const [meshPoints, setMeshPoints] = useState<MeshPoint[]>([]);
+  const [frontStatus, setFrontStatus] = useState<FaceStatus>('idle');
+  const [frontMeshPoints, setFrontMeshPoints] = useState<MeshPoint[]>([]);
+  const [sideStatus, setSideStatus] = useState<FaceStatus>('idle');
+  const [sideMeshPoints, setSideMeshPoints] = useState<MeshPoint[]>([]);
   const [metrics, setMetrics] = useState<DetailedMetrics | null>(null);
   const [avatarRenderTick, setAvatarRenderTick] = useState(0);
   const heroImageRef = useRef<HTMLImageElement>(null);
   const heroCanvasRef = useRef<HTMLCanvasElement>(null);
+  const heroSideImageRef = useRef<HTMLImageElement>(null);
+  const heroSideCanvasRef = useRef<HTMLCanvasElement>(null);
   const resultsImageRef = useRef<HTMLImageElement>(null);
   const resultsCanvasRef = useRef<HTMLCanvasElement>(null);
+  const resultsSideImageRef = useRef<HTMLImageElement>(null);
+  const resultsSideCanvasRef = useRef<HTMLCanvasElement>(null);
   const exportHeroImageRef = useRef<HTMLImageElement>(null);
   const exportHeroCanvasRef = useRef<HTMLCanvasElement>(null);
+  const exportHeroSideImageRef = useRef<HTMLImageElement>(null);
+  const exportHeroSideCanvasRef = useRef<HTMLCanvasElement>(null);
   const exportResultsImageRef = useRef<HTMLImageElement>(null);
   const exportResultsCanvasRef = useRef<HTMLCanvasElement>(null);
+  const exportResultsSideImageRef = useRef<HTMLImageElement>(null);
+  const exportResultsSideCanvasRef = useRef<HTMLCanvasElement>(null);
   const exportPreviewCardRef = useRef<HTMLDivElement>(null);
   const effectiveAnimationProgress = exportFrameProgress ?? animationProgress;
   const [overallLabel, scoreLabel1, scoreLabel2, scoreLabel3, scoreLabel4, scoreLabel5, scoreLabel6] = scoreLabels;
@@ -1318,7 +1422,7 @@ function DetailedBreakdownEditorScreen({
     [scoreLabel6, card.proportionsScore],
   ] as const;
   const scanLabels =
-    faceStatus === 'detected' && metrics
+    frontStatus === 'detected' && metrics
       ? scanLabelsDetected
         ? [
             `${scanLabelsDetected[0]} ${Math.round(metrics.eyeSpacingPercent)}%`,
@@ -1334,9 +1438,9 @@ function DetailedBreakdownEditorScreen({
             `Symmetry ${Math.round(metrics.symmetryPercent)}%`,
             'Compiling results',
           ]
-      : faceStatus === 'no-face'
+      : frontStatus === 'no-face'
         ? ['No face detected']
-        : faceStatus === 'error'
+        : frontStatus === 'error'
           ? ['Face scan failed']
           : ['Mapping face', 'Tracking features', 'Scanning ratios'];
   const scanProgress = windowedProgress(effectiveAnimationProgress, 0.1, 0.64);
@@ -1374,8 +1478,8 @@ function DetailedBreakdownEditorScreen({
     if (!card.frontImage) {
       resetFrameId = requestAnimationFrame(() => {
         if (!cancelled) {
-          setFaceStatus('idle');
-          setMeshPoints([]);
+          setFrontStatus('idle');
+          setFrontMeshPoints([]);
           setMetrics(null);
         }
       });
@@ -1385,8 +1489,8 @@ function DetailedBreakdownEditorScreen({
 
     resetFrameId = requestAnimationFrame(() => {
       if (!cancelled) {
-        setFaceStatus('detecting');
-        setMeshPoints([]);
+        setFrontStatus('detecting');
+        setFrontMeshPoints([]);
         setMetrics(null);
       }
     });
@@ -1408,14 +1512,14 @@ function DetailedBreakdownEditorScreen({
           }
 
           if (poses.length === 0 || poses[0].keypoints.length === 0) {
-            setFaceStatus('no-face');
+            setFrontStatus('no-face');
             return;
           }
 
           const points = poses[0].keypoints.map((point) => ({ x: point.x, y: point.y }));
-          setMeshPoints(points);
+          setFrontMeshPoints(points);
           setMetrics(calculateBodyMetrics(points));
-          setFaceStatus('detected');
+          setFrontStatus('detected');
         } else {
           const detector = await getFaceMeshDetector();
           const faces = await detector.estimateFaces(image, {
@@ -1428,25 +1532,25 @@ function DetailedBreakdownEditorScreen({
           }
 
           if (faces.length === 0) {
-            setFaceStatus('no-face');
+            setFrontStatus('no-face');
             return;
           }
 
           const points = faces[0].keypoints.map((point) => ({ x: point.x, y: point.y }));
-          setMeshPoints(points);
+          setFrontMeshPoints(points);
           setMetrics(calculateDetailedMetrics(points));
-          setFaceStatus('detected');
+          setFrontStatus('detected');
         }
       } catch {
         if (!cancelled) {
-          setFaceStatus('error');
+          setFrontStatus('error');
         }
       }
     };
 
     image.onerror = () => {
       if (!cancelled) {
-        setFaceStatus('error');
+        setFrontStatus('error');
       }
     };
 
@@ -1457,6 +1561,77 @@ function DetailedBreakdownEditorScreen({
       cancelAnimationFrame(resetFrameId);
     };
   }, [card.frontImage, detectionMode]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let resetFrameId = 0;
+
+    if (!enableSideAvatar || !card.sideImage) {
+      resetFrameId = requestAnimationFrame(() => {
+        if (!cancelled) {
+          setSideStatus('idle');
+          setSideMeshPoints([]);
+        }
+      });
+
+      return;
+    }
+
+    resetFrameId = requestAnimationFrame(() => {
+      if (!cancelled) {
+        setSideStatus('detecting');
+        setSideMeshPoints([]);
+      }
+    });
+
+    const image = new Image();
+    image.crossOrigin = 'anonymous';
+
+    image.onload = async () => {
+      try {
+        const detector = await getFaceMeshDetector();
+        const faces = await detector.estimateFaces(image, {
+          flipHorizontal: false,
+          staticImageMode: true,
+        });
+
+        if (cancelled) {
+          return;
+        }
+
+        if (faces.length === 0) {
+          setSideMeshPoints(createSyntheticSideProfilePoints({
+            xMin: image.naturalWidth * 0.18,
+            yMin: image.naturalHeight * 0.12,
+            width: image.naturalWidth * 0.64,
+            height: image.naturalHeight * 0.84,
+          }));
+          setSideStatus('detected');
+          return;
+        }
+
+        setSideMeshPoints(faces[0].keypoints.map((point) => ({ x: point.x, y: point.y })));
+        setSideStatus('detected');
+      } catch {
+        if (!cancelled) {
+          setSideStatus('error');
+        }
+      }
+    };
+
+    image.onerror = () => {
+      if (!cancelled) {
+        setSideStatus('error');
+      }
+    };
+
+    image.src = card.sideImage;
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(resetFrameId);
+    };
+  }, [card.sideImage, enableSideAvatar]);
 
   useEffect(() => {
     const overlayStyle: DetailOverlayStyle = {
@@ -1471,8 +1646,17 @@ function DetailedBreakdownEditorScreen({
     drawOverlay({
       canvas: heroCanvasRef.current,
       image: heroImageRef.current,
-      status: faceStatus,
-      meshPoints,
+      status: frontStatus,
+      meshPoints: frontMeshPoints,
+      progress: scanProgress,
+      overlayStyle,
+    });
+
+    drawSideProfileOverlay({
+      canvas: heroSideCanvasRef.current,
+      image: heroSideImageRef.current,
+      status: sideStatus,
+      meshPoints: sideMeshPoints,
       progress: scanProgress,
       overlayStyle,
     });
@@ -1480,8 +1664,17 @@ function DetailedBreakdownEditorScreen({
     drawOverlay({
       canvas: resultsCanvasRef.current,
       image: resultsImageRef.current,
-      status: faceStatus,
-      meshPoints,
+      status: frontStatus,
+      meshPoints: frontMeshPoints,
+      progress: 1,
+      overlayStyle,
+    });
+
+    drawSideProfileOverlay({
+      canvas: resultsSideCanvasRef.current,
+      image: resultsSideImageRef.current,
+      status: sideStatus,
+      meshPoints: sideMeshPoints,
       progress: 1,
       overlayStyle,
     });
@@ -1489,8 +1682,17 @@ function DetailedBreakdownEditorScreen({
     drawOverlay({
       canvas: exportHeroCanvasRef.current,
       image: exportHeroImageRef.current,
-      status: faceStatus,
-      meshPoints,
+      status: frontStatus,
+      meshPoints: frontMeshPoints,
+      progress: scanProgress,
+      overlayStyle,
+    });
+
+    drawSideProfileOverlay({
+      canvas: exportHeroSideCanvasRef.current,
+      image: exportHeroSideImageRef.current,
+      status: sideStatus,
+      meshPoints: sideMeshPoints,
       progress: scanProgress,
       overlayStyle,
     });
@@ -1498,8 +1700,17 @@ function DetailedBreakdownEditorScreen({
     drawOverlay({
       canvas: exportResultsCanvasRef.current,
       image: exportResultsImageRef.current,
-      status: faceStatus,
-      meshPoints,
+      status: frontStatus,
+      meshPoints: frontMeshPoints,
+      progress: 1,
+      overlayStyle,
+    });
+
+    drawSideProfileOverlay({
+      canvas: exportResultsSideCanvasRef.current,
+      image: exportResultsSideImageRef.current,
+      status: sideStatus,
+      meshPoints: sideMeshPoints,
       progress: 1,
       overlayStyle,
     });
@@ -1510,8 +1721,10 @@ function DetailedBreakdownEditorScreen({
     card.landmarkLineThickness,
     card.landmarkOpacity,
     detectionMode,
-    faceStatus,
-    meshPoints,
+    frontStatus,
+    frontMeshPoints,
+    sideStatus,
+    sideMeshPoints,
     scanProgress,
   ]);
 
@@ -1565,7 +1778,7 @@ function DetailedBreakdownEditorScreen({
       const totalFrames = Math.max(2, Math.round((animationDurationMs / 1000) * fps));
       const exportId = `${Date.now()}`;
       const inputPattern = `detail-frame-${exportId}-%03d.png`;
-      const outputName = `omnimaxx-detailed-breakdown-${exportId}.mp4`;
+      const outputName = `${exportBaseName}-${exportId}.mp4`;
 
       setExportMessage('Rendering frames...');
       setExportProgress(18);
@@ -1584,8 +1797,17 @@ function DetailedBreakdownEditorScreen({
         drawOverlay({
           canvas: exportHeroCanvasRef.current,
           image: exportHeroImageRef.current,
-          status: faceStatus,
-          meshPoints,
+          status: frontStatus,
+          meshPoints: frontMeshPoints,
+          progress: easedProgress(windowedProgress(frameProgress, 0.08, 0.6)),
+          overlayStyle,
+        });
+
+        drawSideProfileOverlay({
+          canvas: exportHeroSideCanvasRef.current,
+          image: exportHeroSideImageRef.current,
+          status: sideStatus,
+          meshPoints: sideMeshPoints,
           progress: easedProgress(windowedProgress(frameProgress, 0.08, 0.6)),
           overlayStyle,
         });
@@ -1593,8 +1815,17 @@ function DetailedBreakdownEditorScreen({
         drawOverlay({
           canvas: exportResultsCanvasRef.current,
           image: exportResultsImageRef.current,
-          status: faceStatus,
-          meshPoints,
+          status: frontStatus,
+          meshPoints: frontMeshPoints,
+          progress: 1,
+          overlayStyle,
+        });
+
+        drawSideProfileOverlay({
+          canvas: exportResultsSideCanvasRef.current,
+          image: exportResultsSideImageRef.current,
+          status: sideStatus,
+          meshPoints: sideMeshPoints,
           progress: 1,
           overlayStyle,
         });
@@ -1714,7 +1945,7 @@ function DetailedBreakdownEditorScreen({
         throw new Error('Could not prepare the export preview.');
       }
 
-      const outputName = `omnimaxx-detailed-breakdown-${Date.now()}.png`;
+      const outputName = `${exportBaseName}-${Date.now()}.png`;
       await waitForExportNodeReady(sourceNode);
       const overlayStyle: DetailOverlayStyle = {
         color: card.landmarkColor,
@@ -1727,8 +1958,17 @@ function DetailedBreakdownEditorScreen({
       drawOverlay({
         canvas: exportHeroCanvasRef.current,
         image: exportHeroImageRef.current,
-        status: faceStatus,
-        meshPoints,
+        status: frontStatus,
+        meshPoints: frontMeshPoints,
+        progress: scanProgress,
+        overlayStyle,
+      });
+
+      drawSideProfileOverlay({
+        canvas: exportHeroSideCanvasRef.current,
+        image: exportHeroSideImageRef.current,
+        status: sideStatus,
+        meshPoints: sideMeshPoints,
         progress: scanProgress,
         overlayStyle,
       });
@@ -1736,8 +1976,17 @@ function DetailedBreakdownEditorScreen({
       drawOverlay({
         canvas: exportResultsCanvasRef.current,
         image: exportResultsImageRef.current,
-        status: faceStatus,
-        meshPoints,
+        status: frontStatus,
+        meshPoints: frontMeshPoints,
+        progress: 1,
+        overlayStyle,
+      });
+
+      drawSideProfileOverlay({
+        canvas: exportResultsSideCanvasRef.current,
+        image: exportResultsSideImageRef.current,
+        status: sideStatus,
+        meshPoints: sideMeshPoints,
         progress: 1,
         overlayStyle,
       });
@@ -1794,10 +2043,28 @@ function DetailedBreakdownEditorScreen({
                 hidden
                 onChange={onFrontImageChange}
               />
-              <span className={`face-status face-status--${card.frontImage ? faceStatus : 'idle'}`}>
-                {getDetectionStatusLabel(detectionMode, card.frontImage ? faceStatus : 'idle')}
+              <span className={`face-status face-status--${card.frontImage ? frontStatus : 'idle'}`}>
+                {getDetectionStatusLabel(detectionMode, card.frontImage ? frontStatus : 'idle')}
               </span>
             </Field>
+
+            {enableSideAvatar && sideFileRef && onOpenSidePicker && onSideImageChange && (
+              <Field label="Side Image">
+                <button className="control control--upload" onClick={onOpenSidePicker}>
+                  <span>{card.sideImage ? 'Change image' : 'Choose file'}</span>
+                </button>
+                <input
+                  ref={sideFileRef}
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={onSideImageChange}
+                />
+                <span className={`face-status face-status--${card.sideImage ? sideStatus : 'idle'}`}>
+                  {getFaceStatusLabel(card.sideImage ? sideStatus : 'idle')}
+                </span>
+              </Field>
+            )}
 
             <Field label="Animation Length">
               <select
@@ -1809,6 +2076,19 @@ function DetailedBreakdownEditorScreen({
                 <option value={3000}>3 sec</option>
               </select>
             </Field>
+
+            {enableSideAvatar && (
+              <Field label="Layout Swap">
+                <label className="check-control">
+                  <input
+                    type="checkbox"
+                    checked={card.swapHeaderWithAvatars}
+                    onChange={(event) => onChange('swapHeaderWithAvatars', event.target.checked)}
+                  />
+                  <span>Put avatars on top</span>
+                </label>
+              </Field>
+            )}
           </div>
 
           <div className="editor-section">
@@ -1936,10 +2216,16 @@ function DetailedBreakdownEditorScreen({
               onOpenFrontPicker={onOpenFrontPicker}
               heroImageRef={heroImageRef}
               heroCanvasRef={heroCanvasRef}
+              heroSideImageRef={heroSideImageRef}
+              heroSideCanvasRef={heroSideCanvasRef}
               resultsImageRef={resultsImageRef}
               resultsCanvasRef={resultsCanvasRef}
+              resultsSideImageRef={resultsSideImageRef}
+              resultsSideCanvasRef={resultsSideCanvasRef}
               onImageLoad={() => setAvatarRenderTick((current) => current + 1)}
               avatarShape={templateLabel === 'Height/Posture' ? 'rectangle' : 'circle'}
+              enableSideAvatar={enableSideAvatar}
+              onOpenSidePicker={onOpenSidePicker}
               showReplay
               onReplay={() => setAnimationNonce((current) => current + 1)}
             />
@@ -1988,10 +2274,16 @@ function DetailedBreakdownEditorScreen({
                 onOpenFrontPicker={onOpenFrontPicker}
                 heroImageRef={exportHeroImageRef}
                 heroCanvasRef={exportHeroCanvasRef}
+                heroSideImageRef={exportHeroSideImageRef}
+                heroSideCanvasRef={exportHeroSideCanvasRef}
                 resultsImageRef={exportResultsImageRef}
                 resultsCanvasRef={exportResultsCanvasRef}
+                resultsSideImageRef={exportResultsSideImageRef}
+                resultsSideCanvasRef={exportResultsSideCanvasRef}
                 onImageLoad={() => setAvatarRenderTick((current) => current + 1)}
                 avatarShape={templateLabel === 'Height/Posture' ? 'rectangle' : 'circle'}
+                enableSideAvatar={enableSideAvatar}
+                onOpenSidePicker={onOpenSidePicker}
               />
             </div>
           </div>
@@ -2015,10 +2307,16 @@ function DetailedPreviewCard({
   onOpenFrontPicker,
   heroImageRef,
   heroCanvasRef,
+  heroSideImageRef,
+  heroSideCanvasRef,
   resultsImageRef,
   resultsCanvasRef,
+  resultsSideImageRef,
+  resultsSideCanvasRef,
   onImageLoad,
   avatarShape = 'circle',
+  enableSideAvatar,
+  onOpenSidePicker,
   showReplay,
   onReplay,
 }: {
@@ -2035,13 +2333,47 @@ function DetailedPreviewCard({
   onOpenFrontPicker: () => void;
   heroImageRef: React.RefObject<HTMLImageElement | null>;
   heroCanvasRef: React.RefObject<HTMLCanvasElement | null>;
+  heroSideImageRef?: React.RefObject<HTMLImageElement | null>;
+  heroSideCanvasRef?: React.RefObject<HTMLCanvasElement | null>;
   resultsImageRef: React.RefObject<HTMLImageElement | null>;
   resultsCanvasRef: React.RefObject<HTMLCanvasElement | null>;
+  resultsSideImageRef?: React.RefObject<HTMLImageElement | null>;
+  resultsSideCanvasRef?: React.RefObject<HTMLCanvasElement | null>;
   onImageLoad: () => void;
   avatarShape?: 'circle' | 'rectangle';
+  enableSideAvatar?: boolean;
+  onOpenSidePicker?: () => void;
   showReplay?: boolean;
   onReplay?: () => void;
 }) {
+  const swapHeaderWithAvatars = enableSideAvatar && card.swapHeaderWithAvatars;
+  const portraitAppbar = (
+    <div className={`portrait-appbar ${swapHeaderWithAvatars ? 'portrait-appbar--under-avatar' : ''}`.trim()}>
+      <div className="portrait-appbar__brand">
+        <img
+          src="/omnimaxx-app-icon.png"
+          alt="OmniMaxx app icon"
+          className="portrait-appbar__logo"
+          loading="eager"
+          decoding="sync"
+          fetchPriority="high"
+        />
+        <span className="portrait-appbar__name">OMNIMAXX</span>
+      </div>
+
+      <div className="portrait-appbar__store">
+        <img
+          src="/app-store-logo.png"
+          alt="App Store"
+          className="portrait-appbar__store-image"
+          loading="eager"
+          decoding="sync"
+          fetchPriority="high"
+        />
+      </div>
+    </div>
+  );
+
   return (
     <div
       ref={innerRef}
@@ -2054,32 +2386,11 @@ function DetailedPreviewCard({
         ['--detail-badge-border-end' as string]: card.badgeBorderEnd,
       }}
     >
-      <div className="portrait-header">
-        <div className="portrait-appbar">
-          <div className="portrait-appbar__brand">
-            <img
-              src="/omnimaxx-app-icon.png"
-              alt="OmniMaxx app icon"
-              className="portrait-appbar__logo"
-              loading="eager"
-              decoding="sync"
-              fetchPriority="high"
-            />
-            <span className="portrait-appbar__name">OMNIMAXX</span>
-          </div>
-
-          <div className="portrait-appbar__store">
-            <img
-              src="/app-store-logo.png"
-              alt="App Store"
-              className="portrait-appbar__store-image"
-              loading="eager"
-              decoding="sync"
-              fetchPriority="high"
-            />
-          </div>
+      {!swapHeaderWithAvatars && (
+        <div className="portrait-header">
+          {portraitAppbar}
         </div>
-      </div>
+      )}
 
       <div className="portrait-content-stage">
         <div
@@ -2089,45 +2400,82 @@ function DetailedPreviewCard({
             transform: `translateY(${(1 - analysisReveal) * 20}px) scale(${0.96 + analysisReveal * 0.04})`,
           }}
         >
-          <button
-            className={`portrait-shot portrait-shot--hero ${avatarShape === 'rectangle' ? 'portrait-shot--hero-rect' : ''}`.trim()}
-            onClick={onOpenFrontPicker}
-          >
-            {card.frontImage ? (
-              <>
+          <div className={`portrait-shot-stack ${enableSideAvatar ? 'portrait-shot-stack--dual' : ''}`.trim()}>
+            <button
+              className={`portrait-shot portrait-shot--hero ${avatarShape === 'rectangle' ? 'portrait-shot--hero-rect' : ''} ${enableSideAvatar ? 'portrait-shot--dual' : ''}`.trim()}
+              onClick={onOpenFrontPicker}
+            >
+              {card.frontImage ? (
+                <>
+                  <img
+                    ref={heroImageRef}
+                    src={card.frontImage}
+                    alt="Front profile preview"
+                    className="portrait-shot__image"
+                    onLoad={onImageLoad}
+                    loading="eager"
+                    decoding="sync"
+                    fetchPriority="high"
+                  />
+                  <canvas
+                    ref={heroCanvasRef}
+                    className="portrait-shot__overlay"
+                    aria-hidden="true"
+                  />
+                </>
+              ) : (
+                <>
+                  <ImagePlus size={26} />
+                  <span>{avatarShape === 'rectangle' ? 'Full Body' : 'Front'}</span>
+                </>
+              )}
+              <div className="portrait-shot__badge" aria-hidden="true">
                 <img
-                  ref={heroImageRef}
-                  src={card.frontImage}
-                  alt="Front profile preview"
-                  className="portrait-shot__image"
-                  onLoad={onImageLoad}
+                  src="/omnimaxx-app-icon.png"
+                  alt=""
+                  className="portrait-shot__badge-image"
                   loading="eager"
                   decoding="sync"
                   fetchPriority="high"
                 />
-                <canvas
-                  ref={heroCanvasRef}
-                  className="portrait-shot__overlay"
-                  aria-hidden="true"
-                />
-              </>
-            ) : (
-              <>
-                <ImagePlus size={26} />
-                <span>{avatarShape === 'rectangle' ? 'Full Body' : 'Front'}</span>
-              </>
+              </div>
+            </button>
+
+            {enableSideAvatar && onOpenSidePicker && (
+              <button
+                className="portrait-shot portrait-shot--hero portrait-shot--dual portrait-shot--side"
+                onClick={onOpenSidePicker}
+              >
+                {card.sideImage ? (
+                  <>
+                    <img
+                      ref={heroSideImageRef}
+                      src={card.sideImage}
+                      alt="Side profile preview"
+                      className="portrait-shot__image"
+                      onLoad={onImageLoad}
+                      loading="eager"
+                      decoding="sync"
+                      fetchPriority="high"
+                    />
+                    <canvas
+                      ref={heroSideCanvasRef}
+                      className="portrait-shot__overlay"
+                      aria-hidden="true"
+                    />
+                  </>
+                ) : (
+                  <>
+                    <ImagePlus size={26} />
+                    <span>Side</span>
+                  </>
+                )}
+              </button>
             )}
-            <div className="portrait-shot__badge" aria-hidden="true">
-              <img
-                src="/omnimaxx-app-icon.png"
-                alt=""
-                className="portrait-shot__badge-image"
-                loading="eager"
-                decoding="sync"
-                fetchPriority="high"
-              />
-            </div>
-          </button>
+
+          </div>
+
+          {swapHeaderWithAvatars && portraitAppbar}
 
           <div className="portrait-analysis-copy">
             <span className="portrait-analysis-copy__eyebrow">Analyzing with OmniMaxx</span>
@@ -2149,42 +2497,76 @@ function DetailedPreviewCard({
           className="portrait-results-stage"
           style={getRevealStyle(resultsReveal, 24, 0.97)}
         >
-          <div className={`portrait-results-avatar ${avatarShape === 'rectangle' ? 'portrait-results-avatar--rect' : ''}`.trim()}>
-            {card.frontImage ? (
-              <>
+          <div className={`portrait-results-avatar-stack ${enableSideAvatar ? 'portrait-results-avatar-stack--dual' : ''}`.trim()}>
+            <div className={`portrait-results-avatar ${avatarShape === 'rectangle' ? 'portrait-results-avatar--rect' : ''} ${enableSideAvatar ? 'portrait-results-avatar--dual' : ''}`.trim()}>
+              {card.frontImage ? (
+                <>
+                  <img
+                    ref={resultsImageRef}
+                    src={card.frontImage}
+                    alt="Detailed breakdown avatar"
+                    className="portrait-results-avatar__image"
+                    onLoad={onImageLoad}
+                    loading="eager"
+                    decoding="sync"
+                    fetchPriority="high"
+                  />
+                  <canvas
+                    ref={resultsCanvasRef}
+                    className="portrait-results-avatar__overlay"
+                    aria-hidden="true"
+                  />
+                </>
+              ) : (
+                <>
+                  <ImagePlus size={24} />
+                  <span>Avatar</span>
+                </>
+              )}
+              <div className="portrait-results-avatar__badge" aria-hidden="true">
                 <img
-                  ref={resultsImageRef}
-                  src={card.frontImage}
-                  alt="Detailed breakdown avatar"
-                  className="portrait-results-avatar__image"
-                  onLoad={onImageLoad}
+                  src="/omnimaxx-app-icon.png"
+                  alt=""
+                  className="portrait-results-avatar__badge-image"
                   loading="eager"
                   decoding="sync"
                   fetchPriority="high"
                 />
-                <canvas
-                  ref={resultsCanvasRef}
-                  className="portrait-results-avatar__overlay"
-                  aria-hidden="true"
-                />
-              </>
-            ) : (
-              <>
-                <ImagePlus size={24} />
-                <span>Avatar</span>
-              </>
-            )}
-            <div className="portrait-results-avatar__badge" aria-hidden="true">
-              <img
-                src="/omnimaxx-app-icon.png"
-                alt=""
-                className="portrait-results-avatar__badge-image"
-                loading="eager"
-                decoding="sync"
-                fetchPriority="high"
-              />
+              </div>
             </div>
+
+            {enableSideAvatar && (
+              <div className="portrait-results-avatar portrait-results-avatar--dual portrait-results-avatar--side">
+                {card.sideImage ? (
+                  <>
+                    <img
+                      ref={resultsSideImageRef}
+                      src={card.sideImage}
+                      alt="Detailed breakdown side avatar"
+                      className="portrait-results-avatar__image"
+                      onLoad={onImageLoad}
+                      loading="eager"
+                      decoding="sync"
+                      fetchPriority="high"
+                    />
+                    <canvas
+                      ref={resultsSideCanvasRef}
+                      className="portrait-results-avatar__overlay"
+                      aria-hidden="true"
+                    />
+                  </>
+                ) : (
+                  <>
+                    <ImagePlus size={24} />
+                    <span>Side</span>
+                  </>
+                )}
+              </div>
+            )}
+
           </div>
+
+          {swapHeaderWithAvatars && portraitAppbar}
 
           <div className="portrait-score-head">
             <span className="portrait-score-head__eyebrow">Overall Score</span>
@@ -3746,6 +4128,186 @@ function drawBodyScanOverlay({
 
   context.shadowBlur = 0;
   context.globalAlpha = 1;
+}
+
+function drawSideProfileOverlay({
+  canvas,
+  image,
+  status,
+  meshPoints,
+  progress,
+  overlayStyle,
+}: {
+  canvas: HTMLCanvasElement | null;
+  image: HTMLImageElement | null;
+  status: FaceStatus;
+  meshPoints: MeshPoint[];
+  progress: number;
+  overlayStyle: DetailOverlayStyle;
+}) {
+  if (!canvas) {
+    return;
+  }
+
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return;
+  }
+
+  const width = canvas.clientWidth;
+  const height = canvas.clientHeight;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+  context.setTransform(dpr, 0, 0, dpr, 0, 0);
+  context.clearRect(0, 0, width, height);
+
+  if (!image || !image.complete || status !== 'detected' || meshPoints.length === 0) {
+    return;
+  }
+
+  const naturalWidth = image.naturalWidth;
+  const naturalHeight = image.naturalHeight;
+  const scale = Math.max(width / naturalWidth, height / naturalHeight);
+  const drawWidth = naturalWidth * scale;
+  const drawHeight = naturalHeight * scale;
+  const offsetX = (width - drawWidth) / 2;
+  const offsetY = (height - drawHeight) / 2;
+  const mappedPoints = meshPoints.map((point) => ({
+    x: point.x * scale + offsetX,
+    y: point.y * scale + offsetY,
+  }));
+
+  const faceLeft = mappedPoints[234] ?? mappedPoints[127] ?? mappedPoints[93];
+  const faceRight = mappedPoints[454] ?? mappedPoints[356] ?? mappedPoints[323];
+
+  if (!faceLeft || !faceRight) {
+    return;
+  }
+
+  const faceCenterX = (faceLeft.x + faceRight.x) / 2;
+  const rightJawPathIndexes = [454, 323, 361, 397, 365, 379, 378, 400, 377, 152];
+  const leftJawPathIndexes = [234, 93, 132, 172, 136, 150, 149, 176, 148, 152];
+
+  const scoreContour = (indexes: number[]) => {
+    const points = indexes
+      .map((index) => mappedPoints[index])
+      .filter((point): point is MeshPoint => Boolean(point));
+
+    if (points.length === 0) {
+      return -1;
+    }
+
+    return points.reduce((sum, point) => sum + Math.abs(point.x - faceCenterX), 0) / points.length;
+  };
+
+  const useRightContour = scoreContour(rightJawPathIndexes) >= scoreContour(leftJawPathIndexes);
+  const jawPathIndexes = useRightContour ? rightJawPathIndexes : leftJawPathIndexes;
+  const zygomaPoint = useRightContour ? mappedPoints[323] ?? mappedPoints[454] : mappedPoints[93] ?? mappedPoints[234];
+  const ramusTop = useRightContour ? mappedPoints[361] ?? mappedPoints[323] : mappedPoints[132] ?? mappedPoints[93];
+  const jawAnglePoint = useRightContour ? mappedPoints[397] ?? mappedPoints[365] : mappedPoints[172] ?? mappedPoints[136];
+  const visibleDots = Math.max(3, Math.round(progress * Math.min(jawPathIndexes.length, 6)));
+  const visibleLinePoints = Math.max(3, Math.round(progress * jawPathIndexes.length));
+  const jawLine = jawPathIndexes
+    .slice(0, visibleLinePoints)
+    .map((index) => mappedPoints[index])
+    .filter((point): point is MeshPoint => Boolean(point));
+  const dotIndexes = useRightContour ? [323, 361, 397, 365, 152] : [93, 132, 172, 136, 152];
+
+  context.strokeStyle = hexToRgba(overlayStyle.color, overlayStyle.opacity);
+  context.lineWidth = Math.max(1, overlayStyle.lineThickness * 0.95);
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+  context.shadowColor = hexToRgba(overlayStyle.color, Math.min(overlayStyle.opacity * 0.72, 0.78));
+  context.shadowBlur = 10;
+
+  if (jawLine.length >= 2) {
+    context.beginPath();
+    context.moveTo(jawLine[0].x, jawLine[0].y);
+    for (const point of jawLine.slice(1)) {
+      context.lineTo(point.x, point.y);
+    }
+    context.stroke();
+  }
+
+  if (zygomaPoint && ramusTop && progress > 0.12) {
+    const zygomaProgress = windowedProgress(progress, 0.12, 0.52);
+    const endX = zygomaPoint.x + (ramusTop.x - zygomaPoint.x) * zygomaProgress;
+    const endY = zygomaPoint.y + (ramusTop.y - zygomaPoint.y) * zygomaProgress;
+    context.globalAlpha = 0.88;
+    context.beginPath();
+    context.moveTo(zygomaPoint.x, zygomaPoint.y);
+    context.lineTo(endX, endY);
+    context.stroke();
+    context.globalAlpha = 1;
+  }
+
+  if (ramusTop && jawAnglePoint && progress > 0.2) {
+    const ramusProgress = windowedProgress(progress, 0.2, 0.8);
+    const endX = ramusTop.x + (jawAnglePoint.x - ramusTop.x) * ramusProgress;
+    const endY = ramusTop.y + (jawAnglePoint.y - ramusTop.y) * ramusProgress;
+    context.globalAlpha = 0.9;
+    context.beginPath();
+    context.moveTo(ramusTop.x, ramusTop.y);
+    context.lineTo(endX, endY);
+    context.stroke();
+    context.globalAlpha = 1;
+  }
+
+  context.fillStyle = hexToRgba(overlayStyle.color, overlayStyle.opacity);
+  for (const index of dotIndexes.slice(0, visibleDots)) {
+    const point = mappedPoints[index];
+    if (!point) {
+      continue;
+    }
+
+    context.beginPath();
+    context.arc(point.x, point.y, Math.max(overlayStyle.dotSize * 0.9, 2), 0, Math.PI * 2);
+    context.fill();
+  }
+
+  context.shadowBlur = 0;
+  context.globalAlpha = 1;
+}
+
+function createSyntheticSideProfilePoints(box: {
+  xMin: number;
+  yMin: number;
+  width: number;
+  height: number;
+}): MeshPoint[] {
+  const points: MeshPoint[] = [];
+  const x = box.xMin;
+  const y = box.yMin;
+  const width = box.width;
+  const height = box.height;
+
+  const setPoint = (index: number, px: number, py: number) => {
+    points[index] = { x: px, y: py };
+  };
+
+  setPoint(454, x + width * 0.78, y + height * 0.24);
+  setPoint(323, x + width * 0.74, y + height * 0.34);
+  setPoint(361, x + width * 0.75, y + height * 0.45);
+  setPoint(397, x + width * 0.71, y + height * 0.58);
+  setPoint(365, x + width * 0.67, y + height * 0.7);
+  setPoint(379, x + width * 0.63, y + height * 0.79);
+  setPoint(378, x + width * 0.58, y + height * 0.86);
+  setPoint(400, x + width * 0.52, y + height * 0.92);
+  setPoint(377, x + width * 0.46, y + height * 0.97);
+  setPoint(152, x + width * 0.41, y + height * 1.0);
+
+  setPoint(234, x + width * 0.22, y + height * 0.24);
+  setPoint(93, x + width * 0.26, y + height * 0.34);
+  setPoint(132, x + width * 0.25, y + height * 0.45);
+  setPoint(172, x + width * 0.29, y + height * 0.58);
+  setPoint(136, x + width * 0.33, y + height * 0.7);
+  setPoint(150, x + width * 0.37, y + height * 0.79);
+  setPoint(149, x + width * 0.42, y + height * 0.86);
+  setPoint(176, x + width * 0.48, y + height * 0.92);
+  setPoint(148, x + width * 0.54, y + height * 0.97);
+
+  return points;
 }
 
 function averagePoint(points: Array<MeshPoint | undefined>) {
