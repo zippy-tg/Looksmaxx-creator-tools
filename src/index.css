@@ -1749,6 +1749,13 @@ button {
   gap: 12px;
 }
 
+.avatar-crop-card__status {
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+}
+
 .crop-slider {
   display: flex;
   flex-direction: column;
@@ -1903,6 +1910,109 @@ button {
   color: rgba(255, 255, 255, 0.96);
 }
 
+.color-code-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top, rgba(255, 30, 30, 0.12), transparent 32%),
+    rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(18px);
+  animation: previewFadeScale 160ms ease-out;
+}
+
+.color-code-modal {
+  width: min(560px, 100%);
+  padding: 22px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    linear-gradient(180deg, rgba(18, 18, 20, 0.96), rgba(8, 8, 10, 0.98));
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+}
+
+.color-code-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.color-code-modal__eyebrow {
+  display: block;
+  margin-bottom: 6px;
+  color: rgba(255, 80, 80, 0.88);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.color-code-modal__header h2 {
+  margin: 0;
+  color: #fff;
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.color-code-modal__copy {
+  margin: 12px 0 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.color-code-modal__textarea {
+  width: 100%;
+  min-height: 164px;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(255, 255, 255, 0.92);
+  font: 500 12px/1.5 "SFMono-Regular", "SF Mono", Menlo, Consolas, monospace;
+  resize: vertical;
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.color-code-modal__textarea:focus {
+  border-color: rgba(255, 80, 80, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(255, 80, 80, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.color-code-modal__message {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.045);
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.color-code-modal__message--error {
+  background: rgba(255, 45, 45, 0.12);
+  color: rgba(255, 210, 210, 0.94);
+  border: 1px solid rgba(255, 70, 70, 0.22);
+}
+
+.color-code-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
 @keyframes previewFadeDown {
   from {
     opacity: 0;
@@ -1974,5 +2084,18 @@ button {
 
   .preview-card {
     width: 100%;
+  }
+
+  .color-code-modal {
+    padding: 18px;
+    border-radius: 20px;
+  }
+
+  .color-code-modal__header {
+    flex-direction: column;
+  }
+
+  .color-code-modal__actions {
+    flex-direction: column;
   }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 import * as tf from '@tensorflow/tfjs-core';
 import '@tensorflow/tfjs-backend-webgl';
 import * as faceLandmarksDetection from '@tensorflow-models/face-landmarks-detection';
@@ -110,21 +110,38 @@ const INITIAL_CARD: ScorecardState = {
   minimalTier: 'HTN',
   potentialScore: 7.4,
   potentialTier: 'CHAD',
-  ratingGradientStart: '#2a080a',
+  ratingGradientStart: '#570004',
   ratingGradientEnd: '#09090b',
-  potentialGradientStart: '#32090b',
+  potentialGradientStart: '#570004',
   potentialGradientEnd: '#09090b',
-  ratingBarStart: '#ff3b30',
-  ratingBarEnd: '#ff8a65',
-  potentialBarStart: '#ff4035',
-  potentialBarEnd: '#ff8e72',
-  avatarBorderStart: '#4a6cff',
-  avatarBorderEnd: '#7da2ff',
+  ratingBarStart: '#fa0000',
+  ratingBarEnd: '#ff0000',
+  potentialBarStart: '#ff0f0f',
+  potentialBarEnd: '#ff0000',
+  avatarBorderStart: '#000000',
+  avatarBorderEnd: '#ff0000',
   meshColor: '#ffffff',
   meshOpacity: 0.42,
 };
 
-const TIER_OPTIONS = ['SUB 5', 'LTN', 'MTN', 'HTN', 'CHAD LITE', 'CHAD', 'ADAM', 'LTB', 'MTB', 'HTB', 'STACY'] as const;
+const TIER_OPTIONS = [
+  'SUB 3',
+  'SUB 4',
+  'SUB 5',
+  'LTN',
+  'MTN',
+  'HTN',
+  'CHAD LITE',
+  'CHAD',
+  'ADAM',
+  'LTB',
+  'MTB',
+  'HTB',
+  'EVE',
+  'EVELITE',
+  'STACYLITE',
+  'STACY',
+] as const;
 
 const INITIAL_DETAILED_CARD: DetailedBreakdownState = {
   frontImage: null,
@@ -145,15 +162,15 @@ const INITIAL_DETAILED_CARD: DetailedBreakdownState = {
   featuresScore: 5.8,
   symmetryScore: 6.6,
   proportionsScore: 6.2,
-  accentStart: '#c7d99f',
-  accentEnd: '#f1dfb7',
-  scoreColor: '#d8e7b2',
-  landmarkColor: '#ff5a52',
+  accentStart: '#000000',
+  accentEnd: '#ff0000',
+  scoreColor: '#8a8a8a',
+  landmarkColor: '#ffffff',
   landmarkOpacity: 0.88,
   landmarkDotSize: 3.2,
   landmarkLineThickness: 1.6,
-  badgeBorderStart: '#9cb5ff',
-  badgeBorderEnd: '#496ef9',
+  badgeBorderStart: '#000000',
+  badgeBorderEnd: '#000000',
 };
 
 const INITIAL_HEIGHT_POSTURE_CARD: DetailedBreakdownState = {
@@ -197,11 +214,11 @@ const INITIAL_ASCEND_CARD: AscendState = {
   potentialScore: 8.1,
   potentialTier: 'CHAD',
   improvementScore: 7.6,
-  accentStart: '#4a6cff',
-  accentEnd: '#8ec5ff',
+  accentStart: '#ff0000',
+  accentEnd: '#ff0000',
   fontColor: '#ffffff',
-  avatarBorderStart: '#7da2ff',
-  avatarBorderEnd: '#3f6bff',
+  avatarBorderStart: '#ff0000',
+  avatarBorderEnd: '#ff0000',
   meshColor: '#ffffff',
   meshOpacity: 0.42,
 };
@@ -314,6 +331,7 @@ function App() {
   const [detailedCard2, setDetailedCard2] = useState<DetailedBreakdownState>(INITIAL_DETAILED_CARD);
   const [heightPostureCard, setHeightPostureCard] = useState<DetailedBreakdownState>(INITIAL_HEIGHT_POSTURE_CARD);
   const [ascendCard, setAscendCard] = useState<AscendState>(INITIAL_ASCEND_CARD);
+  const [colorCodeModal, setColorCodeModal] = useState<ColorCodeModalState | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const detailedFrontFileRef = useRef<HTMLInputElement>(null);
   const detailedSideFileRef = useRef<HTMLInputElement>(null);
@@ -464,6 +482,79 @@ function App() {
     setScreen('category-intro');
   };
 
+  const openGenerateColorCodeModal = (payload: ColorCodePayload) => {
+    setColorCodeModal({
+      mode: 'generate',
+      template: payload.template,
+      code: encodeColorCode(payload),
+      error: null,
+      copied: false,
+    });
+  };
+
+  const openApplyColorCodeModal = ({
+    template,
+    onApply,
+  }: {
+    template: ColorCodePayload['template'];
+    onApply: (colors: Record<string, string | number | boolean>) => void;
+  }) => {
+    setColorCodeModal({
+      mode: 'apply',
+      template,
+      code: '',
+      onApply,
+      error: null,
+      copied: false,
+    });
+  };
+
+  const closeColorCodeModal = () => {
+    setColorCodeModal(null);
+  };
+
+  const updateColorCodeValue = (code: string) => {
+    setColorCodeModal((current) => (current ? { ...current, code, error: null, copied: false } : current));
+  };
+
+  const handleCopyColorCode = async () => {
+    if (!colorCodeModal) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(colorCodeModal.code);
+      setColorCodeModal((current) => (current ? { ...current, copied: true } : current));
+    } catch {
+      setColorCodeModal((current) => (
+        current ? { ...current, error: 'Copy failed. You can still select and copy the code manually.' } : current
+      ));
+    }
+  };
+
+  const handleApplyColorCode = () => {
+    if (!colorCodeModal || colorCodeModal.mode !== 'apply' || !colorCodeModal.onApply) {
+      return;
+    }
+
+    try {
+      const payload = decodeColorCode(colorCodeModal.code);
+      if (payload.template !== colorCodeModal.template) {
+        setColorCodeModal((current) => (
+          current ? { ...current, error: 'That color code belongs to a different template.' } : current
+        ));
+        return;
+      }
+
+      colorCodeModal.onApply(payload.colors);
+      setColorCodeModal(null);
+    } catch {
+      setColorCodeModal((current) => (
+        current ? { ...current, error: 'That color code is invalid. Check the full code and try again.' } : current
+      ));
+    }
+  };
+
   const categoryParentScreen = pendingCategory === 'height-posture-detailed' ? 'height-posture-analysis' : 'face-analysis';
 
   return (
@@ -501,6 +592,8 @@ function App() {
           onOpenPicker={() => fileRef.current?.click()}
           onImageChange={handleImage}
           onChange={setField}
+          onOpenGenerateColorCode={openGenerateColorCodeModal}
+          onOpenApplyColorCode={openApplyColorCodeModal}
         />
       )}
 
@@ -515,6 +608,8 @@ function App() {
           onFrontImageChange={handleDetailedFrontImage}
           onSideImageChange={handleDetailedSideImage}
           onChange={setDetailedField}
+          onOpenGenerateColorCode={openGenerateColorCodeModal}
+          onOpenApplyColorCode={openApplyColorCodeModal}
         />
       )}
 
@@ -529,10 +624,13 @@ function App() {
           onFrontImageChange={handleDetailed2FrontImage}
           onSideImageChange={handleDetailed2SideImage}
           onChange={setDetailed2Field}
+          onOpenGenerateColorCode={openGenerateColorCodeModal}
+          onOpenApplyColorCode={openApplyColorCodeModal}
           title="Detailed Breakdown 2.0"
           description="Build the 9:16 dual-angle breakdown card for creator edits."
           templateLabel="Detailed 2.0"
           enableSideAvatar
+          sideOverlayMode="mesh"
           exportBaseName="omnimaxx-detailed-breakdown-2"
         />
       )}
@@ -545,6 +643,8 @@ function App() {
           onOpenPicker={() => ascendFileRef.current?.click()}
           onImageChange={handleAscendImage}
           onChange={setAscendField}
+          onOpenGenerateColorCode={openGenerateColorCodeModal}
+          onOpenApplyColorCode={openApplyColorCodeModal}
         />
       )}
 
@@ -563,6 +663,8 @@ function App() {
           onOpenFrontPicker={() => detailedFrontFileRef.current?.click()}
           onFrontImageChange={handleHeightPostureFrontImage}
           onChange={setHeightPostureField}
+          onOpenGenerateColorCode={openGenerateColorCodeModal}
+          onOpenApplyColorCode={openApplyColorCodeModal}
           title="Detailed Height/Posture Analysis"
           description="Build the vertical 9:16 height and posture card for creator edits."
           templateLabel="Height/Posture"
@@ -571,6 +673,14 @@ function App() {
           detectionMode="body"
         />
       )}
+
+      <ColorCodeModal
+        modal={colorCodeModal}
+        onClose={closeColorCodeModal}
+        onCodeChange={updateColorCodeValue}
+        onCopy={handleCopyColorCode}
+        onApply={handleApplyColorCode}
+      />
     </div>
   );
 }
@@ -584,6 +694,28 @@ function downloadBlob(blob: Blob, fileName: string) {
   link.click();
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+type ColorCodePayload = {
+  template: 'minimal' | 'detailed' | 'ascend';
+  colors: Record<string, string | number | boolean>;
+};
+
+type ColorCodeModalState = {
+  mode: 'generate' | 'apply';
+  template: ColorCodePayload['template'];
+  code: string;
+  onApply?: (colors: Record<string, string | number | boolean>) => void;
+  error?: string | null;
+  copied?: boolean;
+};
+
+function encodeColorCode(payload: ColorCodePayload) {
+  return btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+}
+
+function decodeColorCode(value: string): ColorCodePayload {
+  return JSON.parse(decodeURIComponent(escape(atob(value.trim())))) as ColorCodePayload;
 }
 
 function HomeScreen({
@@ -628,6 +760,98 @@ function HomeScreen({
           <ChevronRight size={20} />
         </button>
       </main>
+    </div>
+  );
+}
+
+function ColorCodeActions({
+  onGenerate,
+  onApply,
+}: {
+  onGenerate: () => void | Promise<void>;
+  onApply: () => void;
+}) {
+  return (
+    <div className="compact-grid compact-grid--double">
+      <button type="button" className="preview-export" onClick={onGenerate}>
+        Generate color code
+      </button>
+      <button type="button" className="preview-export preview-export--secondary" onClick={onApply}>
+        Paste color code
+      </button>
+    </div>
+  );
+}
+
+function ColorCodeModal({
+  modal,
+  onClose,
+  onCodeChange,
+  onCopy,
+  onApply,
+}: {
+  modal: ColorCodeModalState | null;
+  onClose: () => void;
+  onCodeChange: (value: string) => void;
+  onCopy: () => void | Promise<void>;
+  onApply: () => void;
+}) {
+  if (!modal) {
+    return null;
+  }
+
+  const templateLabel =
+    modal.template === 'minimal' ? 'Minimal' : modal.template === 'detailed' ? 'Detailed' : 'ASCEND';
+
+  return (
+    <div className="color-code-modal-backdrop" onClick={onClose}>
+      <div className="color-code-modal" onClick={(event) => event.stopPropagation()}>
+        <div className="color-code-modal__header">
+          <div>
+            <span className="color-code-modal__eyebrow">{templateLabel} Color Code</span>
+            <h2>{modal.mode === 'generate' ? 'Generate Color Code' : 'Paste Color Code'}</h2>
+          </div>
+
+          <button type="button" className="control control--ghost control--ghost-small" onClick={onClose}>
+            Close
+          </button>
+        </div>
+
+        <p className="color-code-modal__copy">
+          {modal.mode === 'generate'
+            ? 'Save this look and reuse it later by copying the code below.'
+            : 'Paste a saved color code to restore a previous look instantly.'}
+        </p>
+
+        <textarea
+          className="color-code-modal__textarea"
+          value={modal.code}
+          onChange={(event) => onCodeChange(event.target.value)}
+          readOnly={modal.mode === 'generate'}
+          placeholder={modal.mode === 'apply' ? 'Paste your saved code here...' : undefined}
+          rows={8}
+        />
+
+        {modal.error && <div className="color-code-modal__message color-code-modal__message--error">{modal.error}</div>}
+        {modal.copied && modal.mode === 'generate' && (
+          <div className="color-code-modal__message">Copied to clipboard.</div>
+        )}
+
+        <div className="color-code-modal__actions">
+          {modal.mode === 'generate' ? (
+            <button type="button" className="preview-export" onClick={onCopy}>
+              Copy code
+            </button>
+          ) : (
+            <button type="button" className="preview-export" onClick={onApply}>
+              Apply code
+            </button>
+          )}
+          <button type="button" className="preview-export preview-export--secondary" onClick={onClose}>
+            Cancel
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -795,6 +1019,8 @@ function MinimalEditorScreen({
   onOpenPicker,
   onImageChange,
   onChange,
+  onOpenGenerateColorCode,
+  onOpenApplyColorCode,
 }: {
   card: ScorecardState;
   fileRef: React.RefObject<HTMLInputElement | null>;
@@ -802,6 +1028,11 @@ function MinimalEditorScreen({
   onOpenPicker: () => void;
   onImageChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onChange: <K extends keyof ScorecardState>(field: K, value: ScorecardState[K]) => void;
+  onOpenGenerateColorCode: (payload: ColorCodePayload) => void;
+  onOpenApplyColorCode: (args: {
+    template: ColorCodePayload['template'];
+    onApply: (colors: Record<string, string | number | boolean>) => void;
+  }) => void;
 }) {
   const [animationNonce, setAnimationNonce] = useState(0);
   const [animationDurationMs, setAnimationDurationMs] = useState<AnimationDurationMs>(3000);
@@ -810,6 +1041,7 @@ function MinimalEditorScreen({
   const [draftImageOffsetY, setDraftImageOffsetY] = useState(card.imageOffsetY);
   const [draftImageZoom, setDraftImageZoom] = useState(card.imageZoom);
   const [draftPreviewImage, setDraftPreviewImage] = useState<string | null>(card.image);
+  const [isRefreshingMesh, setIsRefreshingMesh] = useState(false);
   const [exportFrameProgress, setExportFrameProgress] = useState<number | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportMessage, setExportMessage] = useState<string | null>(null);
@@ -829,6 +1061,13 @@ function MinimalEditorScreen({
     draftImageOffsetY !== card.imageOffsetY ||
     draftImageZoom !== card.imageZoom;
   const previewImage = draftPreviewImage ?? card.image;
+  const cropStatusLabel = !card.sourceImage
+    ? 'Upload an image to start.'
+    : isRefreshingMesh
+      ? 'Refreshing mesh...'
+      : isCropDirty
+        ? 'Mesh will refresh automatically.'
+        : 'Mesh is up to date.';
   const effectiveAnimationProgress = exportFrameProgress ?? animationProgress;
   const topbarReveal = easedProgress(windowedProgress(effectiveAnimationProgress, 0, 0.18));
   const avatarReveal = easedProgress(windowedProgress(effectiveAnimationProgress, 0.12, 0.35));
@@ -978,6 +1217,37 @@ function MinimalEditorScreen({
   }, [card.image, card.sourceImage, draftImageOffsetX, draftImageOffsetY, draftImageZoom]);
 
   useEffect(() => {
+    if (!card.sourceImage || !isCropDirty) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void (async () => {
+        setIsRefreshingMesh(true);
+        try {
+          const croppedImage = await createCroppedAvatarImage({
+            source: card.sourceImage!,
+            offsetX: draftImageOffsetX,
+            offsetY: draftImageOffsetY,
+            zoom: draftImageZoom,
+            size: 1400,
+          });
+
+          onChange('imageOffsetX', draftImageOffsetX);
+          onChange('imageOffsetY', draftImageOffsetY);
+          onChange('imageZoom', draftImageZoom);
+          onChange('image', croppedImage);
+          setDraftPreviewImage(croppedImage);
+        } finally {
+          setIsRefreshingMesh(false);
+        }
+      })();
+    }, 500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [card.sourceImage, draftImageOffsetX, draftImageOffsetY, draftImageZoom, isCropDirty, onChange]);
+
+  useEffect(() => {
     drawFaceMesh({
       canvas: meshCanvasRef.current,
       image: avatarImageRef.current,
@@ -1006,25 +1276,36 @@ function MinimalEditorScreen({
     meshPoints,
   ]);
 
-  const handleRenderMesh = async () => {
+  const renderCurrentMesh = async (restartAnimation = true) => {
     if (!card.sourceImage) {
       return;
     }
 
-    const croppedImage = await createCroppedAvatarImage({
-      source: card.sourceImage,
-      offsetX: draftImageOffsetX,
-      offsetY: draftImageOffsetY,
-      zoom: draftImageZoom,
-      size: 1400,
-    });
+    setIsRefreshingMesh(true);
+    try {
+      const croppedImage = await createCroppedAvatarImage({
+        source: card.sourceImage,
+        offsetX: draftImageOffsetX,
+        offsetY: draftImageOffsetY,
+        zoom: draftImageZoom,
+        size: 1400,
+      });
 
-    onChange('imageOffsetX', draftImageOffsetX);
-    onChange('imageOffsetY', draftImageOffsetY);
-    onChange('imageZoom', draftImageZoom);
-    onChange('image', croppedImage);
-    setDraftPreviewImage(croppedImage);
-    setAnimationNonce((current) => current + 1);
+      onChange('imageOffsetX', draftImageOffsetX);
+      onChange('imageOffsetY', draftImageOffsetY);
+      onChange('imageZoom', draftImageZoom);
+      onChange('image', croppedImage);
+      setDraftPreviewImage(croppedImage);
+      if (restartAnimation) {
+        setAnimationNonce((current) => current + 1);
+      }
+    } finally {
+      setIsRefreshingMesh(false);
+    }
+  };
+
+  const handleRenderMesh = async () => {
+    await renderCurrentMesh(true);
   };
 
   const handleExportVideo = async () => {
@@ -1250,6 +1531,46 @@ function MinimalEditorScreen({
     }
   };
 
+  const handleGenerateColorCode = async () => {
+    onOpenGenerateColorCode({
+      template: 'minimal',
+      colors: {
+        ratingGradientStart: card.ratingGradientStart,
+        ratingGradientEnd: card.ratingGradientEnd,
+        potentialGradientStart: card.potentialGradientStart,
+        potentialGradientEnd: card.potentialGradientEnd,
+        ratingBarStart: card.ratingBarStart,
+        ratingBarEnd: card.ratingBarEnd,
+        potentialBarStart: card.potentialBarStart,
+        potentialBarEnd: card.potentialBarEnd,
+        avatarBorderStart: card.avatarBorderStart,
+        avatarBorderEnd: card.avatarBorderEnd,
+        meshColor: card.meshColor,
+        meshOpacity: card.meshOpacity,
+      },
+    });
+  };
+
+  const handleApplyColorCode = () => {
+    onOpenApplyColorCode({
+      template: 'minimal',
+      onApply: (colors) => {
+        if (typeof colors.ratingGradientStart === 'string') onChange('ratingGradientStart', colors.ratingGradientStart);
+        if (typeof colors.ratingGradientEnd === 'string') onChange('ratingGradientEnd', colors.ratingGradientEnd);
+        if (typeof colors.potentialGradientStart === 'string') onChange('potentialGradientStart', colors.potentialGradientStart);
+        if (typeof colors.potentialGradientEnd === 'string') onChange('potentialGradientEnd', colors.potentialGradientEnd);
+        if (typeof colors.ratingBarStart === 'string') onChange('ratingBarStart', colors.ratingBarStart);
+        if (typeof colors.ratingBarEnd === 'string') onChange('ratingBarEnd', colors.ratingBarEnd);
+        if (typeof colors.potentialBarStart === 'string') onChange('potentialBarStart', colors.potentialBarStart);
+        if (typeof colors.potentialBarEnd === 'string') onChange('potentialBarEnd', colors.potentialBarEnd);
+        if (typeof colors.avatarBorderStart === 'string') onChange('avatarBorderStart', colors.avatarBorderStart);
+        if (typeof colors.avatarBorderEnd === 'string') onChange('avatarBorderEnd', colors.avatarBorderEnd);
+        if (typeof colors.meshColor === 'string') onChange('meshColor', colors.meshColor);
+        if (typeof colors.meshOpacity === 'number') onChange('meshOpacity', colors.meshOpacity);
+      },
+    });
+  };
+
   return (
     <div className="editor-shell">
       <button className="back-button" onClick={onBack}>
@@ -1429,6 +1750,11 @@ function MinimalEditorScreen({
             </div>
           </div>
 
+          <div className="editor-section">
+            <h2>Color Code</h2>
+            <ColorCodeActions onGenerate={handleGenerateColorCode} onApply={handleApplyColorCode} />
+          </div>
+
           {card.sourceImage && (
             <div className="editor-section">
               <div className="avatar-crop-card">
@@ -1501,6 +1827,7 @@ function MinimalEditorScreen({
                   >
                     Render mesh
                   </button>
+                  <span className="avatar-crop-card__status">{cropStatusLabel}</span>
                 </div>
               </div>
             </div>
@@ -1599,6 +1926,8 @@ function DetailedBreakdownEditorScreen({
   onFrontImageChange,
   onSideImageChange,
   onChange,
+  onOpenGenerateColorCode,
+  onOpenApplyColorCode,
   title = 'Detailed Breakdown',
   description = 'Build the vertical 9:16 breakdown card for creator edits.',
   templateLabel = 'Detailed',
@@ -1606,6 +1935,7 @@ function DetailedBreakdownEditorScreen({
   scanLabelsDetected,
   detectionMode = 'face',
   enableSideAvatar = false,
+  sideOverlayMode = 'profile',
   exportBaseName = 'omnimaxx-detailed-breakdown',
 }: {
   card: DetailedBreakdownState;
@@ -1617,6 +1947,11 @@ function DetailedBreakdownEditorScreen({
   onFrontImageChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onSideImageChange?: (event: ChangeEvent<HTMLInputElement>) => void;
   onChange: <K extends keyof DetailedBreakdownState>(field: K, value: DetailedBreakdownState[K]) => void;
+  onOpenGenerateColorCode: (payload: ColorCodePayload) => void;
+  onOpenApplyColorCode: (args: {
+    template: ColorCodePayload['template'];
+    onApply: (colors: Record<string, string | number | boolean>) => void;
+  }) => void;
   title?: string;
   description?: string;
   templateLabel?: string;
@@ -1624,6 +1959,7 @@ function DetailedBreakdownEditorScreen({
   scanLabelsDetected?: readonly [string, string, string, string, string];
   detectionMode?: DetectionMode;
   enableSideAvatar?: boolean;
+  sideOverlayMode?: 'profile' | 'mesh';
   exportBaseName?: string;
 }) {
   const [animationNonce, setAnimationNonce] = useState(0);
@@ -1637,6 +1973,8 @@ function DetailedBreakdownEditorScreen({
   const [draftSideZoom, setDraftSideZoom] = useState(card.sideImageZoom);
   const [draftFrontPreviewImage, setDraftFrontPreviewImage] = useState<string | null>(card.frontImage);
   const [draftSidePreviewImage, setDraftSidePreviewImage] = useState<string | null>(card.sideImage);
+  const [isRefreshingFrontOverlay, setIsRefreshingFrontOverlay] = useState(false);
+  const [isRefreshingSideOverlay, setIsRefreshingSideOverlay] = useState(false);
   const [exportFrameProgress, setExportFrameProgress] = useState<number | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportMessage, setExportMessage] = useState<string | null>(null);
@@ -1675,6 +2013,26 @@ function DetailedBreakdownEditorScreen({
     draftSideZoom !== card.sideImageZoom;
   const frontPreviewImage = draftFrontPreviewImage ?? card.frontImage;
   const sidePreviewImage = draftSidePreviewImage ?? card.sideImage;
+  const frontCropStatusLabel = !card.frontSourceImage
+    ? 'Upload an image to start.'
+    : isRefreshingFrontOverlay
+      ? 'Refreshing landmarks...'
+      : isFrontCropDirty
+        ? 'Landmarks will refresh automatically.'
+        : 'Landmarks are up to date.';
+  const sideCropStatusLabel = !card.sideSourceImage
+    ? 'Upload an image to start.'
+    : isRefreshingSideOverlay
+      ? sideOverlayMode === 'mesh'
+        ? 'Refreshing mesh...'
+        : 'Refreshing landmarks...'
+      : isSideCropDirty
+        ? sideOverlayMode === 'mesh'
+          ? 'Mesh will refresh automatically.'
+          : 'Landmarks will refresh automatically.'
+        : sideOverlayMode === 'mesh'
+          ? 'Mesh is up to date.'
+          : 'Landmarks are up to date.';
   const [overallLabel, scoreLabel1, scoreLabel2, scoreLabel3, scoreLabel4, scoreLabel5, scoreLabel6] = scoreLabels;
   const featureRows = [
     [overallLabel, card.overallScore],
@@ -1802,6 +2160,102 @@ function DetailedBreakdownEditorScreen({
       cancelled = true;
     };
   }, [card.sideImage, card.sideSourceImage, draftSideOffsetX, draftSideOffsetY, draftSideZoom]);
+
+  const renderFrontOverlay = useCallback(async (restartAnimation = true) => {
+    if (!card.frontSourceImage) {
+      return;
+    }
+
+    setIsRefreshingFrontOverlay(true);
+    try {
+      const croppedImage = await createCroppedAvatarImage({
+        source: card.frontSourceImage,
+        offsetX: draftFrontOffsetX,
+        offsetY: draftFrontOffsetY,
+        zoom: draftFrontZoom,
+        size: 1400,
+      });
+
+      onChange('frontImageOffsetX', draftFrontOffsetX);
+      onChange('frontImageOffsetY', draftFrontOffsetY);
+      onChange('frontImageZoom', draftFrontZoom);
+      onChange('frontImage', croppedImage);
+      setDraftFrontPreviewImage(croppedImage);
+      if (restartAnimation) {
+        setAnimationNonce((current) => current + 1);
+      }
+    } finally {
+      setIsRefreshingFrontOverlay(false);
+    }
+  }, [card.frontSourceImage, draftFrontOffsetX, draftFrontOffsetY, draftFrontZoom, onChange]);
+
+  const renderSideOverlay = useCallback(async (restartAnimation = true) => {
+    if (!card.sideSourceImage) {
+      return;
+    }
+
+    setIsRefreshingSideOverlay(true);
+    try {
+      const croppedImage = await createCroppedAvatarImage({
+        source: card.sideSourceImage,
+        offsetX: draftSideOffsetX,
+        offsetY: draftSideOffsetY,
+        zoom: draftSideZoom,
+        size: 1400,
+      });
+
+      onChange('sideImageOffsetX', draftSideOffsetX);
+      onChange('sideImageOffsetY', draftSideOffsetY);
+      onChange('sideImageZoom', draftSideZoom);
+      onChange('sideImage', croppedImage);
+      setDraftSidePreviewImage(croppedImage);
+      if (restartAnimation) {
+        setAnimationNonce((current) => current + 1);
+      }
+    } finally {
+      setIsRefreshingSideOverlay(false);
+    }
+  }, [card.sideSourceImage, draftSideOffsetX, draftSideOffsetY, draftSideZoom, onChange]);
+
+  useEffect(() => {
+    if (!card.frontSourceImage || !isFrontCropDirty || detectionMode === 'body') {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void renderFrontOverlay(false);
+    }, 500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    card.frontSourceImage,
+    detectionMode,
+    draftFrontOffsetX,
+    draftFrontOffsetY,
+    draftFrontZoom,
+    isFrontCropDirty,
+    renderFrontOverlay,
+  ]);
+
+  useEffect(() => {
+    if (!enableSideAvatar || !card.sideSourceImage || !isSideCropDirty) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void renderSideOverlay(false);
+    }, 500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    card.sideSourceImage,
+    draftSideOffsetX,
+    draftSideOffsetY,
+    draftSideZoom,
+    enableSideAvatar,
+    isSideCropDirty,
+    renderSideOverlay,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1932,6 +2386,12 @@ function DetailedBreakdownEditorScreen({
         }
 
         if (faces.length === 0) {
+          if (sideOverlayMode === 'mesh') {
+            setSideMeshPoints([]);
+            setSideStatus('no-face');
+            return;
+          }
+
           setSideMeshPoints(createSyntheticSideProfilePoints({
             xMin: image.naturalWidth * 0.18,
             yMin: image.naturalHeight * 0.12,
@@ -1963,7 +2423,7 @@ function DetailedBreakdownEditorScreen({
       cancelled = true;
       cancelAnimationFrame(resetFrameId);
     };
-  }, [card.sideImage, enableSideAvatar]);
+  }, [card.sideImage, enableSideAvatar, sideOverlayMode]);
 
   useEffect(() => {
     const overlayStyle: DetailOverlayStyle = {
@@ -1974,6 +2434,50 @@ function DetailedBreakdownEditorScreen({
     };
 
     const drawOverlay = detectionMode === 'body' ? drawBodyScanOverlay : drawDetailScanOverlay;
+    const drawSideOverlay = sideOverlayMode === 'mesh'
+      ? ({
+          canvas,
+          image,
+          status,
+          meshPoints,
+          progress,
+        }: {
+          canvas: HTMLCanvasElement | null;
+          image: HTMLImageElement | null;
+          status: FaceStatus;
+          meshPoints: MeshPoint[];
+          progress: number;
+        }) =>
+          drawFaceMesh({
+            canvas,
+            image,
+            status,
+            meshPoints,
+            meshDrawProgress: progress,
+            meshColor: card.landmarkColor,
+            meshOpacity: card.landmarkOpacity,
+          })
+      : ({
+          canvas,
+          image,
+          status,
+          meshPoints,
+          progress,
+        }: {
+          canvas: HTMLCanvasElement | null;
+          image: HTMLImageElement | null;
+          status: FaceStatus;
+          meshPoints: MeshPoint[];
+          progress: number;
+        }) =>
+          drawSideProfileOverlay({
+            canvas,
+            image,
+            status,
+            meshPoints,
+            progress,
+            overlayStyle,
+          });
 
     drawOverlay({
       canvas: heroCanvasRef.current,
@@ -1984,13 +2488,12 @@ function DetailedBreakdownEditorScreen({
       overlayStyle,
     });
 
-    drawSideProfileOverlay({
+    drawSideOverlay({
       canvas: heroSideCanvasRef.current,
       image: heroSideImageRef.current,
       status: sideStatus,
       meshPoints: sideMeshPoints,
       progress: scanProgress,
-      overlayStyle,
     });
 
     drawOverlay({
@@ -2002,13 +2505,12 @@ function DetailedBreakdownEditorScreen({
       overlayStyle,
     });
 
-    drawSideProfileOverlay({
+    drawSideOverlay({
       canvas: resultsSideCanvasRef.current,
       image: resultsSideImageRef.current,
       status: sideStatus,
       meshPoints: sideMeshPoints,
       progress: 1,
-      overlayStyle,
     });
 
     drawOverlay({
@@ -2020,13 +2522,12 @@ function DetailedBreakdownEditorScreen({
       overlayStyle,
     });
 
-    drawSideProfileOverlay({
+    drawSideOverlay({
       canvas: exportHeroSideCanvasRef.current,
       image: exportHeroSideImageRef.current,
       status: sideStatus,
       meshPoints: sideMeshPoints,
       progress: scanProgress,
-      overlayStyle,
     });
 
     drawOverlay({
@@ -2038,13 +2539,12 @@ function DetailedBreakdownEditorScreen({
       overlayStyle,
     });
 
-    drawSideProfileOverlay({
+    drawSideOverlay({
       canvas: exportResultsSideCanvasRef.current,
       image: exportResultsSideImageRef.current,
       status: sideStatus,
       meshPoints: sideMeshPoints,
       progress: 1,
-      overlayStyle,
     });
   }, [
     avatarRenderTick,
@@ -2057,6 +2557,7 @@ function DetailedBreakdownEditorScreen({
     frontMeshPoints,
     sideStatus,
     sideMeshPoints,
+    sideOverlayMode,
     scanProgress,
   ]);
 
@@ -2135,14 +2636,26 @@ function DetailedBreakdownEditorScreen({
           overlayStyle,
         });
 
-        drawSideProfileOverlay({
-          canvas: exportHeroSideCanvasRef.current,
-          image: exportHeroSideImageRef.current,
-          status: sideStatus,
-          meshPoints: sideMeshPoints,
-          progress: easedProgress(windowedProgress(frameProgress, 0.08, 0.6)),
-          overlayStyle,
-        });
+        if (sideOverlayMode === 'mesh') {
+          drawFaceMesh({
+            canvas: exportHeroSideCanvasRef.current,
+            image: exportHeroSideImageRef.current,
+            status: sideStatus,
+            meshPoints: sideMeshPoints,
+            meshDrawProgress: easedProgress(windowedProgress(frameProgress, 0.08, 0.6)),
+            meshColor: card.landmarkColor,
+            meshOpacity: card.landmarkOpacity,
+          });
+        } else {
+          drawSideProfileOverlay({
+            canvas: exportHeroSideCanvasRef.current,
+            image: exportHeroSideImageRef.current,
+            status: sideStatus,
+            meshPoints: sideMeshPoints,
+            progress: easedProgress(windowedProgress(frameProgress, 0.08, 0.6)),
+            overlayStyle,
+          });
+        }
 
         drawOverlay({
           canvas: exportResultsCanvasRef.current,
@@ -2153,14 +2666,26 @@ function DetailedBreakdownEditorScreen({
           overlayStyle,
         });
 
-        drawSideProfileOverlay({
-          canvas: exportResultsSideCanvasRef.current,
-          image: exportResultsSideImageRef.current,
-          status: sideStatus,
-          meshPoints: sideMeshPoints,
-          progress: 1,
-          overlayStyle,
-        });
+        if (sideOverlayMode === 'mesh') {
+          drawFaceMesh({
+            canvas: exportResultsSideCanvasRef.current,
+            image: exportResultsSideImageRef.current,
+            status: sideStatus,
+            meshPoints: sideMeshPoints,
+            meshDrawProgress: 1,
+            meshColor: card.landmarkColor,
+            meshOpacity: card.landmarkOpacity,
+          });
+        } else {
+          drawSideProfileOverlay({
+            canvas: exportResultsSideCanvasRef.current,
+            image: exportResultsSideImageRef.current,
+            status: sideStatus,
+            meshPoints: sideMeshPoints,
+            progress: 1,
+            overlayStyle,
+          });
+        }
         await waitForAnimationFrame();
 
         const frame = await toCanvas(sourceNode, {
@@ -2296,14 +2821,26 @@ function DetailedBreakdownEditorScreen({
         overlayStyle,
       });
 
-      drawSideProfileOverlay({
-        canvas: exportHeroSideCanvasRef.current,
-        image: exportHeroSideImageRef.current,
-        status: sideStatus,
-        meshPoints: sideMeshPoints,
-        progress: scanProgress,
-        overlayStyle,
-      });
+      if (sideOverlayMode === 'mesh') {
+        drawFaceMesh({
+          canvas: exportHeroSideCanvasRef.current,
+          image: exportHeroSideImageRef.current,
+          status: sideStatus,
+          meshPoints: sideMeshPoints,
+          meshDrawProgress: scanProgress,
+          meshColor: card.landmarkColor,
+          meshOpacity: card.landmarkOpacity,
+        });
+      } else {
+        drawSideProfileOverlay({
+          canvas: exportHeroSideCanvasRef.current,
+          image: exportHeroSideImageRef.current,
+          status: sideStatus,
+          meshPoints: sideMeshPoints,
+          progress: scanProgress,
+          overlayStyle,
+        });
+      }
 
       drawOverlay({
         canvas: exportResultsCanvasRef.current,
@@ -2314,14 +2851,26 @@ function DetailedBreakdownEditorScreen({
         overlayStyle,
       });
 
-      drawSideProfileOverlay({
-        canvas: exportResultsSideCanvasRef.current,
-        image: exportResultsSideImageRef.current,
-        status: sideStatus,
-        meshPoints: sideMeshPoints,
-        progress: 1,
-        overlayStyle,
-      });
+      if (sideOverlayMode === 'mesh') {
+        drawFaceMesh({
+          canvas: exportResultsSideCanvasRef.current,
+          image: exportResultsSideImageRef.current,
+          status: sideStatus,
+          meshPoints: sideMeshPoints,
+          meshDrawProgress: 1,
+          meshColor: card.landmarkColor,
+          meshOpacity: card.landmarkOpacity,
+        });
+      } else {
+        drawSideProfileOverlay({
+          canvas: exportResultsSideCanvasRef.current,
+          image: exportResultsSideImageRef.current,
+          status: sideStatus,
+          meshPoints: sideMeshPoints,
+          progress: 1,
+          overlayStyle,
+        });
+      }
       await waitForAnimationFrame();
 
       const frame = await renderExportCanvas({
@@ -2345,6 +2894,40 @@ function DetailedBreakdownEditorScreen({
       setExportFrameProgress(null);
       setIsExporting(false);
     }
+  };
+
+  const handleGenerateColorCode = async () => {
+    onOpenGenerateColorCode({
+      template: 'detailed',
+      colors: {
+        accentStart: card.accentStart,
+        accentEnd: card.accentEnd,
+        scoreColor: card.scoreColor,
+        landmarkColor: card.landmarkColor,
+        landmarkOpacity: card.landmarkOpacity,
+        landmarkDotSize: card.landmarkDotSize,
+        landmarkLineThickness: card.landmarkLineThickness,
+        badgeBorderStart: card.badgeBorderStart,
+        badgeBorderEnd: card.badgeBorderEnd,
+      },
+    });
+  };
+
+  const handleApplyColorCode = () => {
+    onOpenApplyColorCode({
+      template: 'detailed',
+      onApply: (colors) => {
+        if (typeof colors.accentStart === 'string') onChange('accentStart', colors.accentStart);
+        if (typeof colors.accentEnd === 'string') onChange('accentEnd', colors.accentEnd);
+        if (typeof colors.scoreColor === 'string') onChange('scoreColor', colors.scoreColor);
+        if (typeof colors.landmarkColor === 'string') onChange('landmarkColor', colors.landmarkColor);
+        if (typeof colors.landmarkOpacity === 'number') onChange('landmarkOpacity', colors.landmarkOpacity);
+        if (typeof colors.landmarkDotSize === 'number') onChange('landmarkDotSize', colors.landmarkDotSize);
+        if (typeof colors.landmarkLineThickness === 'number') onChange('landmarkLineThickness', colors.landmarkLineThickness);
+        if (typeof colors.badgeBorderStart === 'string') onChange('badgeBorderStart', colors.badgeBorderStart);
+        if (typeof colors.badgeBorderEnd === 'string') onChange('badgeBorderEnd', colors.badgeBorderEnd);
+      },
+    });
   };
 
   return (
@@ -2533,6 +3116,11 @@ function DetailedBreakdownEditorScreen({
             </div>
           </div>
 
+          <div className="editor-section">
+            <h2>Color Code</h2>
+            <ColorCodeActions onGenerate={handleGenerateColorCode} onApply={handleApplyColorCode} />
+          </div>
+
           {card.frontSourceImage && (
             <div className="editor-section">
               <div className="avatar-crop-card">
@@ -2577,29 +3165,11 @@ function DetailedBreakdownEditorScreen({
                   <button
                     type="button"
                     className="preview-export"
-                    onClick={async () => {
-                      if (!card.frontSourceImage) {
-                        return;
-                      }
-
-                      const croppedImage = await createCroppedAvatarImage({
-                        source: card.frontSourceImage,
-                        offsetX: draftFrontOffsetX,
-                        offsetY: draftFrontOffsetY,
-                        zoom: draftFrontZoom,
-                        size: 1400,
-                      });
-
-                      onChange('frontImageOffsetX', draftFrontOffsetX);
-                      onChange('frontImageOffsetY', draftFrontOffsetY);
-                      onChange('frontImageZoom', draftFrontZoom);
-                      onChange('frontImage', croppedImage);
-                      setDraftFrontPreviewImage(croppedImage);
-                      setAnimationNonce((current) => current + 1);
-                    }}
+                    onClick={() => void renderFrontOverlay(true)}
                   >
                     Render landmarks
                   </button>
+                  <span className="avatar-crop-card__status">{frontCropStatusLabel}</span>
                 </div>
               </div>
             </div>
@@ -2649,29 +3219,11 @@ function DetailedBreakdownEditorScreen({
                   <button
                     type="button"
                     className="preview-export"
-                    onClick={async () => {
-                      if (!card.sideSourceImage) {
-                        return;
-                      }
-
-                      const croppedImage = await createCroppedAvatarImage({
-                        source: card.sideSourceImage,
-                        offsetX: draftSideOffsetX,
-                        offsetY: draftSideOffsetY,
-                        zoom: draftSideZoom,
-                        size: 1400,
-                      });
-
-                      onChange('sideImageOffsetX', draftSideOffsetX);
-                      onChange('sideImageOffsetY', draftSideOffsetY);
-                      onChange('sideImageZoom', draftSideZoom);
-                      onChange('sideImage', croppedImage);
-                      setDraftSidePreviewImage(croppedImage);
-                      setAnimationNonce((current) => current + 1);
-                    }}
+                    onClick={() => void renderSideOverlay(true)}
                   >
                     Render landmarks
                   </button>
+                  <span className="avatar-crop-card__status">{sideCropStatusLabel}</span>
                 </div>
               </div>
             </div>
@@ -3105,6 +3657,8 @@ function AscendEditorScreen({
   onOpenPicker,
   onImageChange,
   onChange,
+  onOpenGenerateColorCode,
+  onOpenApplyColorCode,
 }: {
   card: AscendState;
   fileRef: React.RefObject<HTMLInputElement | null>;
@@ -3112,6 +3666,11 @@ function AscendEditorScreen({
   onOpenPicker: () => void;
   onImageChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onChange: <K extends keyof AscendState>(field: K, value: AscendState[K]) => void;
+  onOpenGenerateColorCode: (payload: ColorCodePayload) => void;
+  onOpenApplyColorCode: (args: {
+    template: ColorCodePayload['template'];
+    onApply: (colors: Record<string, string | number | boolean>) => void;
+  }) => void;
 }) {
   const [animationNonce, setAnimationNonce] = useState(0);
   const [animationDurationMs, setAnimationDurationMs] = useState<AnimationDurationMs>(1500);
@@ -3119,6 +3678,7 @@ function AscendEditorScreen({
   const [draftImageOffsetY, setDraftImageOffsetY] = useState(card.imageOffsetY);
   const [draftImageZoom, setDraftImageZoom] = useState(card.imageZoom);
   const [draftPreviewImage, setDraftPreviewImage] = useState<string | null>(card.image);
+  const [isRefreshingMesh, setIsRefreshingMesh] = useState(false);
   const [faceStatus, setFaceStatus] = useState<FaceStatus>('idle');
   const [meshPoints, setMeshPoints] = useState<MeshPoint[]>([]);
   const [avatarRenderTick, setAvatarRenderTick] = useState(0);
@@ -3138,6 +3698,13 @@ function AscendEditorScreen({
     draftImageOffsetY !== card.imageOffsetY ||
     draftImageZoom !== card.imageZoom;
   const previewImage = draftPreviewImage ?? card.image;
+  const cropStatusLabel = !card.sourceImage
+    ? 'Upload an image to start.'
+    : isRefreshingMesh
+      ? 'Refreshing mesh...'
+      : isCropDirty
+        ? 'Mesh will refresh automatically.'
+        : 'Mesh is up to date.';
   const topbarReveal = easedProgress(windowedProgress(effectiveAnimationProgress, 0, 0.16));
   const avatarReveal = easedProgress(windowedProgress(effectiveAnimationProgress, 0.1, 0.34));
   const primaryReveal = easedProgress(windowedProgress(effectiveAnimationProgress, 0.24, 0.5));
@@ -3208,6 +3775,46 @@ function AscendEditorScreen({
       cancelled = true;
     };
   }, [card.image, card.sourceImage, draftImageOffsetX, draftImageOffsetY, draftImageZoom]);
+
+  const renderCurrentMesh = useCallback(async (restartAnimation = true) => {
+    if (!card.sourceImage) {
+      return;
+    }
+
+    setIsRefreshingMesh(true);
+    try {
+      const croppedImage = await createCroppedAvatarImage({
+        source: card.sourceImage,
+        offsetX: draftImageOffsetX,
+        offsetY: draftImageOffsetY,
+        zoom: draftImageZoom,
+        size: 1400,
+      });
+
+      onChange('imageOffsetX', draftImageOffsetX);
+      onChange('imageOffsetY', draftImageOffsetY);
+      onChange('imageZoom', draftImageZoom);
+      onChange('image', croppedImage);
+      setDraftPreviewImage(croppedImage);
+      if (restartAnimation) {
+        setAnimationNonce((current) => current + 1);
+      }
+    } finally {
+      setIsRefreshingMesh(false);
+    }
+  }, [card.sourceImage, draftImageOffsetX, draftImageOffsetY, draftImageZoom, onChange]);
+
+  useEffect(() => {
+    if (!card.sourceImage || !isCropDirty) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void renderCurrentMesh(false);
+    }, 500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [card.sourceImage, draftImageOffsetX, draftImageOffsetY, draftImageZoom, isCropDirty, renderCurrentMesh]);
 
   useEffect(() => {
     let cancelled = false;
@@ -3308,24 +3915,7 @@ function AscendEditorScreen({
   ]);
 
   const handleRenderMesh = async () => {
-    if (!card.sourceImage) {
-      return;
-    }
-
-    const croppedImage = await createCroppedAvatarImage({
-      source: card.sourceImage,
-      offsetX: draftImageOffsetX,
-      offsetY: draftImageOffsetY,
-      zoom: draftImageZoom,
-      size: 1400,
-    });
-
-    onChange('imageOffsetX', draftImageOffsetX);
-    onChange('imageOffsetY', draftImageOffsetY);
-    onChange('imageZoom', draftImageZoom);
-    onChange('image', croppedImage);
-    setDraftPreviewImage(croppedImage);
-    setAnimationNonce((current) => current + 1);
+    await renderCurrentMesh(true);
   };
 
   const handleExportVideo = async () => {
@@ -3548,6 +4138,36 @@ function AscendEditorScreen({
     }
   };
 
+  const handleGenerateColorCode = async () => {
+    onOpenGenerateColorCode({
+      template: 'ascend',
+      colors: {
+        accentStart: card.accentStart,
+        accentEnd: card.accentEnd,
+        fontColor: card.fontColor,
+        avatarBorderStart: card.avatarBorderStart,
+        avatarBorderEnd: card.avatarBorderEnd,
+        meshColor: card.meshColor,
+        meshOpacity: card.meshOpacity,
+      },
+    });
+  };
+
+  const handleApplyColorCode = () => {
+    onOpenApplyColorCode({
+      template: 'ascend',
+      onApply: (colors) => {
+        if (typeof colors.accentStart === 'string') onChange('accentStart', colors.accentStart);
+        if (typeof colors.accentEnd === 'string') onChange('accentEnd', colors.accentEnd);
+        if (typeof colors.fontColor === 'string') onChange('fontColor', colors.fontColor);
+        if (typeof colors.avatarBorderStart === 'string') onChange('avatarBorderStart', colors.avatarBorderStart);
+        if (typeof colors.avatarBorderEnd === 'string') onChange('avatarBorderEnd', colors.avatarBorderEnd);
+        if (typeof colors.meshColor === 'string') onChange('meshColor', colors.meshColor);
+        if (typeof colors.meshOpacity === 'number') onChange('meshOpacity', colors.meshOpacity);
+      },
+    });
+  };
+
   return (
     <div className="editor-shell">
       <button className="back-button" onClick={onBack}>
@@ -3691,6 +4311,11 @@ function AscendEditorScreen({
             </div>
           </div>
 
+          <div className="editor-section">
+            <h2>Color Code</h2>
+            <ColorCodeActions onGenerate={handleGenerateColorCode} onApply={handleApplyColorCode} />
+          </div>
+
           {card.sourceImage && (
             <div className="editor-section">
               <div className="avatar-crop-card">
@@ -3735,6 +4360,7 @@ function AscendEditorScreen({
                   <button type="button" className="preview-export" onClick={handleRenderMesh}>
                     Render mesh
                   </button>
+                  <span className="avatar-crop-card__status">{cropStatusLabel}</span>
                 </div>
               </div>
             </div>
