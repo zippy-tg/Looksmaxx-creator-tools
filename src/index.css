@@ -258,6 +258,48 @@ button {
   z-index: 1;
 }
 
+.category-card__tape {
+  position: absolute;
+  left: -8%;
+  width: 116%;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 7px 0;
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      rgba(120, 0, 0, 0.96) 0,
+      rgba(120, 0, 0, 0.96) 16px,
+      rgba(255, 210, 210, 0.08) 16px,
+      rgba(255, 210, 210, 0.08) 24px
+    );
+  border-top: 1px solid rgba(255, 125, 125, 0.2);
+  border-bottom: 1px solid rgba(255, 125, 125, 0.2);
+  box-shadow: 0 0 24px rgba(140, 0, 0, 0.24);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.category-card__tape span {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  color: rgba(255, 240, 240, 0.92);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.category-card__tape--top {
+  top: 22px;
+  transform: rotate(-7deg);
+}
+
+.category-card__tape--bottom {
+  bottom: 18px;
+  transform: rotate(6deg);
+}
+
 .category-card--muted {
   opacity: 0.72;
 }
@@ -499,6 +541,10 @@ button {
   padding-top: 10px;
 }
 
+.portrait-stage--square {
+  min-height: 0;
+}
+
 .portrait-card {
   --detail-accent-start: #ff4d3d;
   --detail-accent-end: #ff9a7a;
@@ -511,6 +557,12 @@ button {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.portrait-card--square {
+  width: min(460px, 100%);
+  aspect-ratio: 1 / 1;
+  padding: 24px 20px 20px;
 }
 
 .ascend-card {
@@ -836,6 +888,13 @@ button {
   backface-visibility: hidden;
 }
 
+.portrait-card--capture-square {
+  width: 460px !important;
+  height: 460px !important;
+  min-height: 460px !important;
+  max-height: 460px !important;
+}
+
 .portrait-export-capture-shell {
   position: fixed;
   left: -10000px;
@@ -845,6 +904,11 @@ button {
   opacity: 1;
   pointer-events: none;
   overflow: hidden;
+}
+
+.portrait-export-capture-shell--square {
+  width: 460px;
+  height: 460px;
 }
 
 .portrait-header {
@@ -949,6 +1013,95 @@ button {
 .portrait-content-stage {
   position: relative;
   flex: 1;
+}
+
+.portrait-card--square .portrait-content-stage {
+  transform: scale(0.85);
+  transform-origin: top center;
+  height: calc(100% / 0.85);
+}
+
+.portrait-card--square .portrait-header {
+  margin-bottom: 12px;
+}
+
+.portrait-card--square .portrait-appbar__logo {
+  width: 36px;
+  height: 36px;
+}
+
+.portrait-card--square .portrait-appbar__name {
+  font-size: 23px;
+}
+
+.portrait-card--square .portrait-appbar__store {
+  width: 64px;
+  height: 64px;
+}
+
+.portrait-card--square .portrait-shot--hero {
+  width: 236px;
+}
+
+.portrait-card--square .portrait-results-avatar {
+  width: 132px;
+  min-width: 132px;
+  max-width: 132px;
+  height: 132px;
+  min-height: 132px;
+  max-height: 132px;
+  flex: 0 0 132px;
+  margin-bottom: 8px;
+}
+
+.portrait-card--square .portrait-score-head {
+  margin-bottom: 10px;
+}
+
+.portrait-card--square .portrait-score-head__eyebrow {
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.portrait-card--square .portrait-score-head__value strong {
+  font-size: 58px;
+}
+
+.portrait-card--square .portrait-score-head__value span {
+  font-size: 13px;
+}
+
+.portrait-card--square .portrait-panel {
+  max-width: 346px;
+  min-height: 168px;
+  padding: 16px 18px 14px;
+}
+
+.portrait-card--square .portrait-breakdown-grid {
+  gap: 12px 20px;
+}
+
+.portrait-card--square .detail-feature-cell strong {
+  font-size: 22px;
+}
+
+.portrait-card--square .detail-feature-cell span {
+  font-size: 10px;
+}
+
+.portrait-card--square .portrait-results-stage {
+  padding-top: 0;
+  transform: translateY(-8px);
+}
+
+.portrait-card--square .portrait-replay {
+  margin-top: 4px;
+  padding: 7px 12px;
+  font-size: 11px;
+}
+
+.portrait-card--square .portrait-panel {
+  min-height: 178px;
 }
 
 .portrait-analysis-stage,
@@ -1077,6 +1230,8 @@ button {
   flex-direction: column;
   align-items: center;
   gap: 6px;
+  width: 100%;
+  min-height: 52px;
 }
 
 .portrait-analysis-copy__eyebrow {
@@ -1091,6 +1246,11 @@ button {
   font-size: 16px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.92);
+  min-height: 20px;
+  width: 220px;
+  max-width: 100%;
+  text-align: center;
+  line-height: 1.2;
 }
 
 .portrait-analysis-copy__status {
@@ -1349,6 +1509,17 @@ button {
   contain: paint;
   transform: translateZ(0);
   backface-visibility: hidden;
+}
+
+.preview-card--capture,
+.preview-card--capture *,
+.portrait-card--capture,
+.portrait-card--capture *,
+.ascend-card--capture,
+.ascend-card--capture * {
+  animation: none !important;
+  transition: none !important;
+  caret-color: transparent !important;
 }
 
 .preview-card--capture .preview-grid {

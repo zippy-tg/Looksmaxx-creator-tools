@@ -16,12 +16,14 @@ type Screen =
   | 'category-intro'
   | 'minimal-rating-potential'
   | 'detailed-breakdown'
+  | 'detailed-breakdown-1-1'
   | 'detailed-breakdown-2'
   | 'ascend'
   | 'height-posture-detailed';
 type CategoryScreen =
   | 'minimal-rating-potential'
   | 'detailed-breakdown'
+  | 'detailed-breakdown-1-1'
   | 'detailed-breakdown-2'
   | 'ascend'
   | 'height-posture-detailed';
@@ -78,6 +80,7 @@ interface DetailedBreakdownState {
   landmarkLineThickness: number;
   badgeBorderStart: string;
   badgeBorderEnd: string;
+  overlayMode: 'landmarks' | 'mesh';
 }
 
 interface AscendState {
@@ -171,6 +174,7 @@ const INITIAL_DETAILED_CARD: DetailedBreakdownState = {
   landmarkLineThickness: 1.6,
   badgeBorderStart: '#000000',
   badgeBorderEnd: '#000000',
+  overlayMode: 'landmarks',
 };
 
 const INITIAL_HEIGHT_POSTURE_CARD: DetailedBreakdownState = {
@@ -201,6 +205,7 @@ const INITIAL_HEIGHT_POSTURE_CARD: DetailedBreakdownState = {
   landmarkLineThickness: 1.6,
   badgeBorderStart: '#9cb5ff',
   badgeBorderEnd: '#496ef9',
+  overlayMode: 'landmarks',
 };
 
 const INITIAL_ASCEND_CARD: AscendState = {
@@ -571,6 +576,7 @@ function App() {
         <FaceAnalysisScreen
           onBack={() => setScreen('home')}
           onOpenDetailed={() => openCategory('detailed-breakdown')}
+          onOpenDetailedSquare={() => openCategory('detailed-breakdown-1-1')}
           onOpenDetailed2={() => openCategory('detailed-breakdown-2')}
           onOpenAscend={() => openCategory('ascend')}
         />
@@ -617,6 +623,29 @@ function App() {
           onChange={setDetailedField}
           onOpenGenerateColorCode={openGenerateColorCodeModal}
           onOpenApplyColorCode={openApplyColorCodeModal}
+          allowOverlayModeToggle
+        />
+      )}
+
+      {screen === 'detailed-breakdown-1-1' && (
+        <DetailedBreakdownEditorScreen
+          card={detailedCard}
+          frontFileRef={detailedFrontFileRef}
+          sideFileRef={detailedSideFileRef}
+          onBack={() => setScreen('face-analysis')}
+          onOpenFrontPicker={() => detailedFrontFileRef.current?.click()}
+          onOpenSidePicker={() => detailedSideFileRef.current?.click()}
+          onFrontImageChange={handleDetailedFrontImage}
+          onSideImageChange={handleDetailedSideImage}
+          onChange={setDetailedField}
+          onOpenGenerateColorCode={openGenerateColorCodeModal}
+          onOpenApplyColorCode={openApplyColorCodeModal}
+          title="Detailed Breakdown 1:1"
+          description="Same detailed breakdown template, built for square creator exports."
+          templateLabel="Detailed 1:1"
+          exportBaseName="omnimaxx-detailed-breakdown-1-1"
+          aspectRatio="square"
+          allowOverlayModeToggle
         />
       )}
 
@@ -866,11 +895,13 @@ function ColorCodeModal({
 function FaceAnalysisScreen({
   onBack,
   onOpenDetailed,
+  onOpenDetailedSquare,
   onOpenDetailed2,
   onOpenAscend,
 }: {
   onBack: () => void;
   onOpenDetailed: () => void;
+  onOpenDetailedSquare: () => void;
   onOpenDetailed2: () => void;
   onOpenAscend: () => void;
 }) {
@@ -888,6 +919,16 @@ function FaceAnalysisScreen({
 
       <div className="category-stack">
         <div className="category-card category-card--closed" aria-disabled="true">
+          <div className="category-card__tape category-card__tape--top" aria-hidden="true">
+            <span>CLOSED</span>
+            <span>CLOSED</span>
+            <span>CLOSED</span>
+          </div>
+          <div className="category-card__tape category-card__tape--bottom" aria-hidden="true">
+            <span>CLOSED</span>
+            <span>CLOSED</span>
+            <span>CLOSED</span>
+          </div>
           <div className="category-card__copy">
             <h2>Minimal Rating & Potential</h2>
             <p>Clean two-box layout for creator edits</p>
@@ -907,6 +948,18 @@ function FaceAnalysisScreen({
             <div className="category-card__badges">
               <span className="category-card__meta">Photo + video</span>
               <span className="category-card__tag">Cinematic</span>
+            </div>
+          </div>
+          <ChevronRight size={18} />
+        </button>
+
+        <button className="category-card category-card--active" onClick={onOpenDetailedSquare}>
+          <div className="category-card__copy">
+            <h2>Detailed Breakdown 1:1</h2>
+            <p>Same detailed breakdown template in a square export ratio</p>
+            <div className="category-card__badges">
+              <span className="category-card__meta">Photo + video</span>
+              <span className="category-card__tag">1:1</span>
             </div>
           </div>
           <ChevronRight size={18} />
@@ -951,9 +1004,11 @@ function CategoryIntroScreen({
       ? 'Minimal Rating & Potential'
       : category === 'detailed-breakdown'
         ? 'Detailed Breakdown'
+        : category === 'detailed-breakdown-1-1'
+          ? 'Detailed Breakdown 1:1'
         : category === 'detailed-breakdown-2'
           ? 'Detailed Breakdown 2.0'
-        : category === 'ascend'
+          : category === 'ascend'
           ? 'ASCEND'
           : 'Detailed Height/Posture Analysis';
 
@@ -1353,8 +1408,7 @@ function MinimalEditorScreen({
       setAnimationNonce((current) => current + 1);
       await wait(80);
       setExportFrameProgress(0);
-      await waitForAnimationFrame();
-      await waitForAnimationFrame();
+      await settleExportFrame();
       const width = EXPORT_LAYOUT_SIZE;
       const height = EXPORT_LAYOUT_SIZE;
       const outputSize = EXPORT_VIDEO_SIZE;
@@ -1370,7 +1424,7 @@ function MinimalEditorScreen({
       for (let frameIndex = 0; frameIndex < totalFrames; frameIndex += 1) {
         const frameProgress = frameIndex / (totalFrames - 1);
         setExportFrameProgress(frameProgress);
-        await waitForAnimationFrame();
+        await settleExportFrame(2);
         drawFaceMesh({
           canvas: exportMeshCanvasRef.current,
           image: exportAvatarImageRef.current,
@@ -1380,7 +1434,7 @@ function MinimalEditorScreen({
           meshColor: card.meshColor,
           meshOpacity: card.meshOpacity,
         });
-        await waitForAnimationFrame();
+        await settleExportFrame(2);
 
         const frame = await toCanvas(sourceNode, {
           cacheBust: true,
@@ -1406,7 +1460,7 @@ function MinimalEditorScreen({
       }
 
       setExportFrameProgress(1);
-      await waitForAnimationFrame();
+      await settleExportFrame();
 
       setExportMessage('Encoding MP4...');
       setExportProgress(70);
@@ -1489,7 +1543,7 @@ function MinimalEditorScreen({
     try {
       setExportFrameProgress(1);
       await wait(80);
-      await waitForAnimationFrame();
+      await settleExportFrame();
 
       const sourceNode = exportPreviewCardRef.current;
       if (!sourceNode) {
@@ -1512,7 +1566,7 @@ function MinimalEditorScreen({
         meshColor: card.meshColor,
         meshOpacity: card.meshOpacity,
       });
-      await waitForAnimationFrame();
+      await settleExportFrame(2);
 
       const frame = await renderExportCanvas({
         node: sourceNode,
@@ -1943,6 +1997,8 @@ function DetailedBreakdownEditorScreen({
   enableSideAvatar = false,
   sideOverlayMode = 'profile',
   exportBaseName = 'omnimaxx-detailed-breakdown',
+  aspectRatio = 'portrait',
+  allowOverlayModeToggle = false,
 }: {
   card: DetailedBreakdownState;
   frontFileRef: React.RefObject<HTMLInputElement | null>;
@@ -1967,6 +2023,8 @@ function DetailedBreakdownEditorScreen({
   enableSideAvatar?: boolean;
   sideOverlayMode?: 'profile' | 'mesh';
   exportBaseName?: string;
+  aspectRatio?: 'portrait' | 'square';
+  allowOverlayModeToggle?: boolean;
 }) {
   const [animationNonce, setAnimationNonce] = useState(0);
   const [animationDurationMs, setAnimationDurationMs] = useState<AnimationDurationMs>(3000);
@@ -2019,13 +2077,20 @@ function DetailedBreakdownEditorScreen({
     draftSideZoom !== card.sideImageZoom;
   const frontPreviewImage = draftFrontPreviewImage ?? card.frontImage;
   const sidePreviewImage = draftSidePreviewImage ?? card.sideImage;
+  const frontOverlayMode = detectionMode === 'body' ? 'landmarks' : card.overlayMode;
   const frontCropStatusLabel = !card.frontSourceImage
     ? 'Upload an image to start.'
     : isRefreshingFrontOverlay
-      ? 'Refreshing landmarks...'
+      ? frontOverlayMode === 'mesh'
+        ? 'Refreshing mesh...'
+        : 'Refreshing landmarks...'
       : isFrontCropDirty
-        ? 'Landmarks will refresh automatically.'
-        : 'Landmarks are up to date.';
+        ? frontOverlayMode === 'mesh'
+          ? 'Mesh will refresh automatically.'
+          : 'Landmarks will refresh automatically.'
+        : frontOverlayMode === 'mesh'
+          ? 'Mesh is up to date.'
+          : 'Landmarks are up to date.';
   const sideCropStatusLabel = !card.sideSourceImage
     ? 'Upload an image to start.'
     : isRefreshingSideOverlay
@@ -2439,7 +2504,56 @@ function DetailedBreakdownEditorScreen({
       lineThickness: card.landmarkLineThickness,
     };
 
-    const drawOverlay = detectionMode === 'body' ? drawBodyScanOverlay : drawDetailScanOverlay;
+    const drawOverlay = detectionMode === 'body'
+      ? ({
+          canvas,
+          image,
+          status,
+          meshPoints,
+          progress,
+        }: {
+          canvas: HTMLCanvasElement | null;
+          image: HTMLImageElement | null;
+          status: FaceStatus;
+          meshPoints: MeshPoint[];
+          progress: number;
+        }) => drawBodyScanOverlay({ canvas, image, status, meshPoints, progress, overlayStyle })
+      : frontOverlayMode === 'mesh'
+        ? ({
+            canvas,
+            image,
+            status,
+            meshPoints,
+            progress,
+          }: {
+            canvas: HTMLCanvasElement | null;
+            image: HTMLImageElement | null;
+            status: FaceStatus;
+            meshPoints: MeshPoint[];
+            progress: number;
+          }) =>
+            drawFaceMesh({
+              canvas,
+              image,
+              status,
+              meshPoints,
+              meshDrawProgress: progress,
+              meshColor: card.landmarkColor,
+              meshOpacity: card.landmarkOpacity,
+            })
+        : ({
+            canvas,
+            image,
+            status,
+            meshPoints,
+            progress,
+          }: {
+            canvas: HTMLCanvasElement | null;
+            image: HTMLImageElement | null;
+            status: FaceStatus;
+            meshPoints: MeshPoint[];
+            progress: number;
+          }) => drawDetailScanOverlay({ canvas, image, status, meshPoints, progress, overlayStyle });
     const drawSideOverlay = sideOverlayMode === 'mesh'
       ? ({
           canvas,
@@ -2491,7 +2605,6 @@ function DetailedBreakdownEditorScreen({
       status: frontStatus,
       meshPoints: frontMeshPoints,
       progress: scanProgress,
-      overlayStyle,
     });
 
     drawSideOverlay({
@@ -2508,7 +2621,6 @@ function DetailedBreakdownEditorScreen({
       status: frontStatus,
       meshPoints: frontMeshPoints,
       progress: 1,
-      overlayStyle,
     });
 
     drawSideOverlay({
@@ -2525,7 +2637,6 @@ function DetailedBreakdownEditorScreen({
       status: frontStatus,
       meshPoints: frontMeshPoints,
       progress: scanProgress,
-      overlayStyle,
     });
 
     drawSideOverlay({
@@ -2542,7 +2653,6 @@ function DetailedBreakdownEditorScreen({
       status: frontStatus,
       meshPoints: frontMeshPoints,
       progress: 1,
-      overlayStyle,
     });
 
     drawSideOverlay({
@@ -2559,6 +2669,7 @@ function DetailedBreakdownEditorScreen({
     card.landmarkLineThickness,
     card.landmarkOpacity,
     detectionMode,
+    frontOverlayMode,
     frontStatus,
     frontMeshPoints,
     sideStatus,
@@ -2606,13 +2717,12 @@ function DetailedBreakdownEditorScreen({
       setAnimationNonce((current) => current + 1);
       await wait(80);
       setExportFrameProgress(0);
-      await waitForAnimationFrame();
-      await waitForAnimationFrame();
+      await settleExportFrame();
 
-      const width = EXPORT_PORTRAIT_LAYOUT_WIDTH;
-      const height = EXPORT_PORTRAIT_LAYOUT_HEIGHT;
-      const outputWidth = EXPORT_PORTRAIT_VIDEO_WIDTH;
-      const outputHeight = EXPORT_PORTRAIT_VIDEO_HEIGHT;
+      const width = aspectRatio === 'square' ? EXPORT_LAYOUT_SIZE : EXPORT_PORTRAIT_LAYOUT_WIDTH;
+      const height = aspectRatio === 'square' ? EXPORT_LAYOUT_SIZE : EXPORT_PORTRAIT_LAYOUT_HEIGHT;
+      const outputWidth = aspectRatio === 'square' ? EXPORT_VIDEO_SIZE : EXPORT_PORTRAIT_VIDEO_WIDTH;
+      const outputHeight = aspectRatio === 'square' ? EXPORT_VIDEO_SIZE : EXPORT_PORTRAIT_VIDEO_HEIGHT;
       const fps = 30;
       const totalFrames = Math.max(2, Math.round((animationDurationMs / 1000) * fps));
       const exportId = `${Date.now()}`;
@@ -2627,19 +2737,67 @@ function DetailedBreakdownEditorScreen({
         dotSize: card.landmarkDotSize,
         lineThickness: card.landmarkLineThickness,
       };
-      const drawOverlay = detectionMode === 'body' ? drawBodyScanOverlay : drawDetailScanOverlay;
+      const drawOverlay = detectionMode === 'body'
+        ? ({
+            canvas,
+            image,
+            status,
+            meshPoints,
+            progress,
+          }: {
+            canvas: HTMLCanvasElement | null;
+            image: HTMLImageElement | null;
+            status: FaceStatus;
+            meshPoints: MeshPoint[];
+            progress: number;
+          }) => drawBodyScanOverlay({ canvas, image, status, meshPoints, progress, overlayStyle })
+        : frontOverlayMode === 'mesh'
+          ? ({
+              canvas,
+              image,
+              status,
+              meshPoints,
+              progress,
+            }: {
+              canvas: HTMLCanvasElement | null;
+              image: HTMLImageElement | null;
+              status: FaceStatus;
+              meshPoints: MeshPoint[];
+              progress: number;
+            }) =>
+              drawFaceMesh({
+                canvas,
+                image,
+                status,
+                meshPoints,
+                meshDrawProgress: progress,
+                meshColor: card.landmarkColor,
+                meshOpacity: card.landmarkOpacity,
+              })
+          : ({
+              canvas,
+              image,
+              status,
+              meshPoints,
+              progress,
+            }: {
+              canvas: HTMLCanvasElement | null;
+              image: HTMLImageElement | null;
+              status: FaceStatus;
+              meshPoints: MeshPoint[];
+              progress: number;
+            }) => drawDetailScanOverlay({ canvas, image, status, meshPoints, progress, overlayStyle });
 
       for (let frameIndex = 0; frameIndex < totalFrames; frameIndex += 1) {
         const frameProgress = frameIndex / (totalFrames - 1);
         setExportFrameProgress(frameProgress);
-        await waitForAnimationFrame();
+        await settleExportFrame(2);
         drawOverlay({
           canvas: exportHeroCanvasRef.current,
           image: exportHeroImageRef.current,
           status: frontStatus,
           meshPoints: frontMeshPoints,
           progress: easedProgress(windowedProgress(frameProgress, 0.08, 0.6)),
-          overlayStyle,
         });
 
         if (sideOverlayMode === 'mesh') {
@@ -2669,7 +2827,6 @@ function DetailedBreakdownEditorScreen({
           status: frontStatus,
           meshPoints: frontMeshPoints,
           progress: 1,
-          overlayStyle,
         });
 
         if (sideOverlayMode === 'mesh') {
@@ -2692,7 +2849,7 @@ function DetailedBreakdownEditorScreen({
             overlayStyle,
           });
         }
-        await waitForAnimationFrame();
+        await settleExportFrame(2);
 
         const frame = await toCanvas(sourceNode, {
           cacheBust: true,
@@ -2718,7 +2875,7 @@ function DetailedBreakdownEditorScreen({
       }
 
       setExportFrameProgress(1);
-      await waitForAnimationFrame();
+      await settleExportFrame();
 
       setExportMessage('Encoding MP4...');
       setExportProgress(70);
@@ -2801,7 +2958,7 @@ function DetailedBreakdownEditorScreen({
     try {
       setExportFrameProgress(1);
       await wait(80);
-      await waitForAnimationFrame();
+      await settleExportFrame();
 
       const sourceNode = exportPreviewCardRef.current;
       if (!sourceNode) {
@@ -2816,7 +2973,56 @@ function DetailedBreakdownEditorScreen({
         dotSize: card.landmarkDotSize,
         lineThickness: card.landmarkLineThickness,
       };
-      const drawOverlay = detectionMode === 'body' ? drawBodyScanOverlay : drawDetailScanOverlay;
+      const drawOverlay = detectionMode === 'body'
+        ? ({
+            canvas,
+            image,
+            status,
+            meshPoints,
+            progress,
+          }: {
+            canvas: HTMLCanvasElement | null;
+            image: HTMLImageElement | null;
+            status: FaceStatus;
+            meshPoints: MeshPoint[];
+            progress: number;
+          }) => drawBodyScanOverlay({ canvas, image, status, meshPoints, progress, overlayStyle })
+        : frontOverlayMode === 'mesh'
+          ? ({
+              canvas,
+              image,
+              status,
+              meshPoints,
+              progress,
+            }: {
+              canvas: HTMLCanvasElement | null;
+              image: HTMLImageElement | null;
+              status: FaceStatus;
+              meshPoints: MeshPoint[];
+              progress: number;
+            }) =>
+              drawFaceMesh({
+                canvas,
+                image,
+                status,
+                meshPoints,
+                meshDrawProgress: progress,
+                meshColor: card.landmarkColor,
+                meshOpacity: card.landmarkOpacity,
+              })
+          : ({
+              canvas,
+              image,
+              status,
+              meshPoints,
+              progress,
+            }: {
+              canvas: HTMLCanvasElement | null;
+              image: HTMLImageElement | null;
+              status: FaceStatus;
+              meshPoints: MeshPoint[];
+              progress: number;
+            }) => drawDetailScanOverlay({ canvas, image, status, meshPoints, progress, overlayStyle });
 
       drawOverlay({
         canvas: exportHeroCanvasRef.current,
@@ -2824,7 +3030,6 @@ function DetailedBreakdownEditorScreen({
         status: frontStatus,
         meshPoints: frontMeshPoints,
         progress: scanProgress,
-        overlayStyle,
       });
 
       if (sideOverlayMode === 'mesh') {
@@ -2854,7 +3059,6 @@ function DetailedBreakdownEditorScreen({
         status: frontStatus,
         meshPoints: frontMeshPoints,
         progress: 1,
-        overlayStyle,
       });
 
       if (sideOverlayMode === 'mesh') {
@@ -2877,18 +3081,22 @@ function DetailedBreakdownEditorScreen({
           overlayStyle,
         });
       }
-      await waitForAnimationFrame();
+      await settleExportFrame(2);
 
       const frame = await renderExportCanvas({
         node: sourceNode,
-        width: EXPORT_PORTRAIT_LAYOUT_WIDTH,
-        height: EXPORT_PORTRAIT_LAYOUT_HEIGHT,
-        canvasWidth: EXPORT_PORTRAIT_VIDEO_WIDTH,
-        canvasHeight: EXPORT_PORTRAIT_VIDEO_HEIGHT,
+        width: aspectRatio === 'square' ? EXPORT_LAYOUT_SIZE : EXPORT_PORTRAIT_LAYOUT_WIDTH,
+        height: aspectRatio === 'square' ? EXPORT_LAYOUT_SIZE : EXPORT_PORTRAIT_LAYOUT_HEIGHT,
+        canvasWidth: aspectRatio === 'square' ? EXPORT_VIDEO_SIZE : EXPORT_PORTRAIT_VIDEO_WIDTH,
+        canvasHeight: aspectRatio === 'square' ? EXPORT_VIDEO_SIZE : EXPORT_PORTRAIT_VIDEO_HEIGHT,
       });
 
       setExportProgress(75);
-      const upscaledFrame = upscaleCanvas(frame, EXPORT_PORTRAIT_IMAGE_WIDTH, EXPORT_PORTRAIT_IMAGE_HEIGHT);
+      const upscaledFrame = upscaleCanvas(
+        frame,
+        aspectRatio === 'square' ? EXPORT_IMAGE_SIZE : EXPORT_PORTRAIT_IMAGE_WIDTH,
+        aspectRatio === 'square' ? EXPORT_IMAGE_SIZE : EXPORT_PORTRAIT_IMAGE_HEIGHT,
+      );
       const blob = await canvasToBlob(upscaledFrame);
       downloadBlob(blob, outputName);
       setExportMessage('4K PNG exported.');
@@ -3095,6 +3303,18 @@ function DetailedBreakdownEditorScreen({
             <h2>Landmarks</h2>
 
             <div className="compact-grid compact-grid--double">
+              {allowOverlayModeToggle && detectionMode === 'face' && (
+                <Field label="Overlay Mode">
+                  <select
+                    className="control"
+                    value={card.overlayMode}
+                    onChange={(event) => onChange('overlayMode', event.target.value as DetailedBreakdownState['overlayMode'])}
+                  >
+                    <option value="landmarks">Landmarks</option>
+                    <option value="mesh">Mesh</option>
+                  </select>
+                </Field>
+              )}
               <TuneInput
                 label="Landmark Opacity"
                 value={card.landmarkOpacity}
@@ -3237,8 +3457,9 @@ function DetailedBreakdownEditorScreen({
         </aside>
 
         <section className="editor-right">
-          <div className="portrait-stage">
+          <div className={`portrait-stage ${aspectRatio === 'square' ? 'portrait-stage--square' : ''}`.trim()}>
             <DetailedPreviewCard
+              aspectRatio={aspectRatio}
               card={card}
               frontPreviewImage={frontPreviewImage}
               sidePreviewImage={sidePreviewImage}
@@ -3268,7 +3489,7 @@ function DetailedBreakdownEditorScreen({
               onReplay={() => setAnimationNonce((current) => current + 1)}
             />
 
-            <div className="preview-actions preview-actions--portrait" data-export-ignore="true">
+            <div className={`preview-actions ${aspectRatio === 'square' ? '' : 'preview-actions--portrait'}`.trim()} data-export-ignore="true">
               <button
                 type="button"
                 className="preview-export"
@@ -3289,7 +3510,7 @@ function DetailedBreakdownEditorScreen({
             </div>
 
             {exportMessage && (
-              <div className="preview-export-message preview-export-message--portrait" data-export-ignore="true">
+              <div className={`preview-export-message ${aspectRatio === 'square' ? '' : 'preview-export-message--portrait'}`.trim()} data-export-ignore="true">
                 {exportMessage}
                 {typeof exportProgress === 'number' && (
                   <span className="preview-export-message__progress">{exportProgress}%</span>
@@ -3297,10 +3518,11 @@ function DetailedBreakdownEditorScreen({
               </div>
             )}
 
-            <div className="portrait-export-capture-shell" aria-hidden="true">
+            <div className={`portrait-export-capture-shell ${aspectRatio === 'square' ? 'portrait-export-capture-shell--square' : ''}`.trim()} aria-hidden="true">
               <DetailedPreviewCard
                 innerRef={exportPreviewCardRef}
-                className="portrait-card--capture"
+                className={aspectRatio === 'square' ? 'portrait-card--capture portrait-card--square portrait-card--capture-square' : 'portrait-card--capture'}
+                aspectRatio={aspectRatio}
                 card={card}
                 frontPreviewImage={frontPreviewImage}
                 sidePreviewImage={sidePreviewImage}
@@ -3336,6 +3558,7 @@ function DetailedBreakdownEditorScreen({
 function DetailedPreviewCard({
   innerRef,
   className,
+  aspectRatio = 'portrait',
   card,
   frontPreviewImage,
   sidePreviewImage,
@@ -3366,6 +3589,7 @@ function DetailedPreviewCard({
 }: {
   innerRef?: React.RefObject<HTMLDivElement | null>;
   className?: string;
+  aspectRatio?: 'portrait' | 'square';
   card: DetailedBreakdownState;
   frontPreviewImage?: string | null;
   sidePreviewImage?: string | null;
@@ -3425,7 +3649,7 @@ function DetailedPreviewCard({
   return (
     <div
       ref={innerRef}
-      className={`portrait-card ${className ?? ''}`.trim()}
+      className={`portrait-card ${aspectRatio === 'square' ? 'portrait-card--square' : ''} ${className ?? ''}`.trim()}
       style={{
         ['--detail-accent-start' as string]: card.accentStart,
         ['--detail-accent-end' as string]: card.accentEnd,
@@ -3963,8 +4187,7 @@ function AscendEditorScreen({
       setAnimationNonce((current) => current + 1);
       await wait(80);
       setExportFrameProgress(0);
-      await waitForAnimationFrame();
-      await waitForAnimationFrame();
+      await settleExportFrame();
 
       const width = EXPORT_PORTRAIT_LAYOUT_WIDTH;
       const height = EXPORT_PORTRAIT_LAYOUT_HEIGHT;
@@ -3982,7 +4205,7 @@ function AscendEditorScreen({
       for (let frameIndex = 0; frameIndex < totalFrames; frameIndex += 1) {
         const frameProgress = frameIndex / (totalFrames - 1);
         setExportFrameProgress(frameProgress);
-        await waitForAnimationFrame();
+        await settleExportFrame(2);
         drawFaceMesh({
           canvas: exportMeshCanvasRef.current,
           image: exportHeroImageRef.current,
@@ -3992,7 +4215,7 @@ function AscendEditorScreen({
           meshColor: card.meshColor,
           meshOpacity: card.meshOpacity,
         });
-        await waitForAnimationFrame();
+        await settleExportFrame(2);
 
         const frame = await toCanvas(sourceNode, {
           cacheBust: true,
@@ -4018,7 +4241,7 @@ function AscendEditorScreen({
       }
 
       setExportFrameProgress(1);
-      await waitForAnimationFrame();
+      await settleExportFrame();
 
       setExportMessage('Encoding MP4...');
       setExportProgress(70);
@@ -4101,7 +4324,7 @@ function AscendEditorScreen({
     try {
       setExportFrameProgress(1);
       await wait(80);
-      await waitForAnimationFrame();
+      await settleExportFrame();
 
       const sourceNode = exportPreviewCardRef.current;
       if (!sourceNode) {
@@ -4119,7 +4342,7 @@ function AscendEditorScreen({
         meshColor: card.meshColor,
         meshOpacity: card.meshOpacity,
       });
-      await waitForAnimationFrame();
+      await settleExportFrame(2);
 
       const frame = await renderExportCanvas({
         node: sourceNode,
@@ -5759,6 +5982,16 @@ function waitForAnimationFrame() {
   return new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)));
 }
 
+async function settleExportFrame(frameCount = 3, extraDelay = 0) {
+  for (let index = 0; index < frameCount; index += 1) {
+    await waitForAnimationFrame();
+  }
+
+  if (extraDelay > 0) {
+    await wait(extraDelay);
+  }
+}
+
 async function waitForExportNodeReady(node: HTMLElement) {
   const images = Array.from(node.querySelectorAll('img'));
 
@@ -5783,9 +6016,7 @@ async function waitForExportNodeReady(node: HTMLElement) {
     }),
   );
 
-  await waitForAnimationFrame();
-  await waitForAnimationFrame();
-  await wait(60);
+  await settleExportFrame(3, 60);
 }
 
 function renderExportCanvas({
