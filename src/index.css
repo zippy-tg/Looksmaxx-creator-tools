@@ -153,6 +153,12 @@ button {
   background: rgba(255, 68, 68, 0.08);
 }
 
+.category-card__tag--closed {
+  color: rgba(255, 255, 255, 0.92);
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .tool-card__icon {
   width: 48px;
   height: 48px;
@@ -229,6 +235,27 @@ button {
 
 .category-card--active {
   cursor: pointer;
+}
+
+.category-card--closed {
+  position: relative;
+  cursor: not-allowed;
+  overflow: hidden;
+  opacity: 0.82;
+}
+
+.category-card--closed::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(7px);
+  pointer-events: none;
+}
+
+.category-card--closed > * {
+  position: relative;
+  z-index: 1;
 }
 
 .category-card--muted {

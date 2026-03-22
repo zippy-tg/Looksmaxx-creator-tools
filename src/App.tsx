@@ -273,6 +273,7 @@ const EXPORT_PORTRAIT_VIDEO_WIDTH = 1080;
 const EXPORT_PORTRAIT_VIDEO_HEIGHT = 1920;
 const EXPORT_PORTRAIT_IMAGE_WIDTH = 2160;
 const EXPORT_PORTRAIT_IMAGE_HEIGHT = 3840;
+const MINIMAL_TEMPLATE_CLOSED = true;
 
 async function getFaceMeshDetector() {
   if (!faceMeshDetectorPromise) {
@@ -569,7 +570,6 @@ function App() {
       {screen === 'face-analysis' && (
         <FaceAnalysisScreen
           onBack={() => setScreen('home')}
-          onOpenMinimal={() => openCategory('minimal-rating-potential')}
           onOpenDetailed={() => openCategory('detailed-breakdown')}
           onOpenDetailed2={() => openCategory('detailed-breakdown-2')}
           onOpenAscend={() => openCategory('ascend')}
@@ -580,11 +580,18 @@ function App() {
         <CategoryIntroScreen
           category={pendingCategory}
           onBack={() => setScreen(categoryParentScreen)}
-          onContinue={() => setScreen(pendingCategory)}
+          onContinue={() => {
+            if (pendingCategory === 'minimal-rating-potential' && MINIMAL_TEMPLATE_CLOSED) {
+              setScreen('face-analysis');
+              return;
+            }
+
+            setScreen(pendingCategory);
+          }}
         />
       )}
 
-      {screen === 'minimal-rating-potential' && (
+      {screen === 'minimal-rating-potential' && !MINIMAL_TEMPLATE_CLOSED && (
         <MinimalEditorScreen
           card={card}
           fileRef={fileRef}
@@ -858,13 +865,11 @@ function ColorCodeModal({
 
 function FaceAnalysisScreen({
   onBack,
-  onOpenMinimal,
   onOpenDetailed,
   onOpenDetailed2,
   onOpenAscend,
 }: {
   onBack: () => void;
-  onOpenMinimal: () => void;
   onOpenDetailed: () => void;
   onOpenDetailed2: () => void;
   onOpenAscend: () => void;
@@ -882,17 +887,18 @@ function FaceAnalysisScreen({
       </div>
 
       <div className="category-stack">
-        <button className="category-card category-card--active" onClick={onOpenMinimal}>
+        <div className="category-card category-card--closed" aria-disabled="true">
           <div className="category-card__copy">
             <h2>Minimal Rating & Potential</h2>
             <p>Clean two-box layout for creator edits</p>
             <div className="category-card__badges">
               <span className="category-card__meta">Photo + video</span>
               <span className="category-card__tag">Classic</span>
+              <span className="category-card__tag category-card__tag--closed">Closed</span>
             </div>
           </div>
           <ChevronRight size={18} />
-        </button>
+        </div>
 
         <button className="category-card category-card--active" onClick={onOpenDetailed}>
           <div className="category-card__copy">
